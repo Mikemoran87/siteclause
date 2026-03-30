@@ -66,7 +66,7 @@ export default function Landing({ onStart }: Props) {
       <section className="bg-amber-50 border-y border-amber-100 py-12">
         <div className="max-w-4xl mx-auto px-6 grid grid-cols-3 gap-8 text-center">
           {[
-            { value: '3–5%', label: 'of contract value lost to unclaimed variations on the average project' },
+            { value: '1+', label: 'unclaimed variation on every project — most subcontractors never recover it' },
             { value: '< 2 min', label: 'from upload to full claim analysis and drafted notices' },
             { value: '0', label: 'lawyers or QS needed to get your full entitlement' },
           ].map((s) => (
