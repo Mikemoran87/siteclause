@@ -14,6 +14,7 @@ interface FileItem {
 
 export default function Upload({ onBack, onResults }: Props) {
   const [files, setFiles] = useState<FileItem[]>([])
+  const [pastedText, setPastedText] = useState('')
   const [analysing, setAnalysing] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState('')
@@ -28,16 +29,17 @@ export default function Upload({ onBack, onResults }: Props) {
 
   const contract = files.find(f => f.role === 'contract')
   const correspondence = files.filter(f => f.role === 'correspondence')
+  const hasCorrespondence = correspondence.length > 0 || pastedText.trim().length > 0
 
   const handleAnalyse = async () => {
     if (!contract) { setError('Please upload your subcontract first.'); return }
-    if (correspondence.length === 0) { setError('Please upload at least one email or site document.'); return }
+    if (!hasCorrespondence) { setError('Please upload emails/documents or paste your site messages below.'); return }
     setError('')
     setAnalysing(true)
     setStep('Reading your contract...')
     try {
       setStep('Identifying variation events...')
-      const result = await analyseDocuments(contract.file, correspondence.map(f => f.file))
+      const result = await analyseDocuments(contract.file, correspondence.map(f => f.file), pastedText)
       setStep('Drafting notices...')
       await new Promise(r => setTimeout(r, 600))
       onResults(result)
@@ -146,6 +148,30 @@ export default function Upload({ onBack, onResults }: Props) {
           </div>
           <p className="text-xs text-gray-400 mt-2">
             💡 Tip: Export your WhatsApp group chat as a .txt file — SiteClause will read it
+          </p>
+        </div>
+
+        {/* OR divider */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Or paste directly</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        {/* Paste text box */}
+        <div className="mb-8">
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            Paste emails, WhatsApp messages, or site notes
+          </label>
+          <textarea
+            value={pastedText}
+            onChange={e => setPastedText(e.target.value)}
+            rows={8}
+            placeholder={`Paste anything here — emails, WhatsApp messages, site diary notes, instructions from the main contractor...\n\nExample:\n"WhatsApp 21 Oct — Declan: Can you move the drainage run 3 metres north? We'll sort the VO later"\n"Email 12 Nov — Re: Drainage Revision — please re-route 180m of 150mm pipe per new drawings..."`}
+            className="w-full border border-gray-200 rounded-xl p-4 text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none leading-relaxed"
+          />
+          <p className="text-xs text-gray-400 mt-2">
+            📱 Just copy and paste from your phone, email, or WhatsApp — no formatting needed
           </p>
         </div>
 

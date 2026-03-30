@@ -13,11 +13,15 @@ async function readFileText(file: File): Promise<string> {
 
 export async function analyseDocuments(
   contract: File,
-  correspondence: File[]
+  correspondence: File[],
+  pastedText: string = ''
 ): Promise<AnalysisResult> {
   const contractText = await readFileText(contract)
   const corrTexts = await Promise.all(correspondence.map(readFileText))
-  const corrCombined = corrTexts.join('\n\n--- NEXT DOCUMENT ---\n\n')
+  const corrCombined = [
+    ...corrTexts,
+    pastedText.trim() ? `--- PASTED MESSAGES ---\n${pastedText.trim()}` : ''
+  ].filter(Boolean).join('\n\n--- NEXT DOCUMENT ---\n\n')
 
   const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and contractors by identifying every variation claim they are entitled to, tracking contractual deadlines, and drafting formal notices.
 
