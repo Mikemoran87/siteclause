@@ -130,7 +130,7 @@ export default function Results({ results, onReset }: Props) {
           <div className="text-xl font-black mb-2">Want SiteClause on every project?</div>
           <p className="text-gray-400 text-sm mb-6">Get automatic claim tracking, deadline alerts, and notice drafting across all your active contracts.</p>
           <a
-            href="mailto:hello@siteclause.ai?subject=SiteClause Early Access"
+            href="mailto:hello@siteclause.io?subject=SiteClause Early Access"
             className="inline-block bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-3 rounded-xl transition-colors"
           >
             Get Early Access →

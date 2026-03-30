@@ -150,7 +150,7 @@ export default function Landing({ onStart }: Props) {
       <footer className="border-t border-gray-100 px-6 py-8">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="text-xl font-black text-amber-500">Site<span className="text-gray-900">Clause</span></div>
-          <div className="text-sm text-gray-400">hello@siteclause.ai · siteclause.ai</div>
+          <div className="text-sm text-gray-400">hello@siteclause.io · siteclause.io</div>
         </div>
       </footer>
     </div>
