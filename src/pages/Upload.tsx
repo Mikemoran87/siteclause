@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { analyseDocuments } from '../lib/analyse'
+import { DEMO_CONTRACT, DEMO_CORRESPONDENCE } from '../lib/demo-data'
 import type { AnalysisResult } from '../types'
 
 interface Props {
@@ -18,8 +19,17 @@ export default function Upload({ onBack, onResults }: Props) {
   const [analysing, setAnalysing] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState('')
+  const [demoLoaded, setDemoLoaded] = useState(false)
   const contractRef = useRef<HTMLInputElement>(null)
   const corrRef = useRef<HTMLInputElement>(null)
+
+  const loadDemo = () => {
+    const contractFile = new File([DEMO_CONTRACT], 'demo-jct-subcontract.txt', { type: 'text/plain' })
+    setFiles([{ file: contractFile, role: 'contract' }])
+    setPastedText(DEMO_CORRESPONDENCE)
+    setDemoLoaded(true)
+    setError('')
+  }
 
   const addFiles = (incoming: FileList | null, role: 'contract' | 'correspondence') => {
     if (!incoming) return
@@ -76,7 +86,31 @@ export default function Upload({ onBack, onResults }: Props) {
         </div>
 
         <h1 className="text-3xl font-black text-gray-900 mb-2">Upload your documents</h1>
-        <p className="text-gray-500 mb-10">Upload your subcontract and any site emails, WhatsApp exports, or diary notes. The AI reads everything.</p>
+        <p className="text-gray-500 mb-6">Upload your subcontract and any site emails, WhatsApp exports, or diary notes. The AI reads everything.</p>
+
+        {/* Demo banner */}
+        {!demoLoaded ? (
+          <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-bold text-gray-800 mb-0.5">Not ready to upload real documents?</div>
+              <div className="text-xs text-gray-500">Try our sample JCT subcontract — fictional project, real AI analysis. See exactly what SiteClause finds.</div>
+            </div>
+            <button
+              onClick={loadDemo}
+              className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-colors whitespace-nowrap"
+            >
+              Load Demo →
+            </button>
+          </div>
+        ) : (
+          <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+            <span className="text-green-500 text-xl">✓</span>
+            <div>
+              <div className="text-sm font-bold text-gray-800">Demo documents loaded</div>
+              <div className="text-xs text-gray-500">Oakfield Rise — JCT subcontract + 3 months of site correspondence. Hit Analyse to see what SiteClause finds.</div>
+            </div>
+          </div>
+        )}
 
         {/* Contract upload */}
         <div className="mb-6">

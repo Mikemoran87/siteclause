@@ -35,13 +35,21 @@ export default function Landing({ onStart }: Props) {
           Upload your contract and site emails. SiteClause finds every variation claim, tracks every deadline, and drafts your notices — in under 2 minutes.
         </p>
 
-        <button
-          onClick={onStart}
-          className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-bold px-10 py-4 rounded-xl transition-colors shadow-lg shadow-amber-200"
-        >
-          Analyse My Contract — It's Free →
-        </button>
-        <p className="text-sm text-gray-400 mt-4">No signup. No credit card. Upload and go.</p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            onClick={onStart}
+            className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-bold px-10 py-4 rounded-xl transition-colors shadow-lg shadow-amber-200"
+          >
+            Analyse My Contract — It's Free →
+          </button>
+          <button
+            onClick={onStart}
+            className="border-2 border-amber-500 text-amber-600 hover:bg-amber-50 text-base font-bold px-8 py-4 rounded-xl transition-colors"
+          >
+            Try the Demo →
+          </button>
+        </div>
+        <p className="text-sm text-gray-400 mt-4">No signup. No credit card. No documents needed for the demo.</p>
       </section>
 
       {/* Waitlist strip */}
