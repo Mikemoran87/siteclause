@@ -1,3 +1,5 @@
+import WaitlistForm from '../components/WaitlistForm'
+
 interface Props {
   onStart: () => void
 }
@@ -40,6 +42,16 @@ export default function Landing({ onStart }: Props) {
           Analyse My Contract — It's Free →
         </button>
         <p className="text-sm text-gray-400 mt-4">No signup. No credit card. Upload and go.</p>
+      </section>
+
+      {/* Waitlist strip */}
+      <section className="bg-gray-900 py-10 px-6">
+        <div className="max-w-xl mx-auto text-center">
+          <div className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">Early Access</div>
+          <h3 className="text-xl font-black text-white mb-2">Want SiteClause on every project?</h3>
+          <p className="text-gray-400 text-sm mb-6">Leave your email and be first to know when full project tracking, deadline alerts, and the CC email intake go live.</p>
+          <WaitlistForm />
+        </div>
       </section>
 
       {/* Stats */}
