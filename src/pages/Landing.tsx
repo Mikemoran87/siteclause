@@ -104,7 +104,7 @@ export default function Landing({ onStart }: Props) {
               ))}
             </div>
             <div className="bg-red-50 border-t border-red-100 px-5 py-3 text-center text-xs font-bold text-red-700">
-              Average loss: €127,000 on a €3m project
+              Industry estimate: 3–5% of contract value lost to unclaimed variations
             </div>
           </div>
 
