@@ -89,5 +89,6 @@ ${corrCombined.slice(0, 8000)}`
 
   const data = await response.json()
   const result = JSON.parse(data.choices[0].message.content)
+  result.contractText = contractText.slice(0, 12000)
   return result as AnalysisResult
 }

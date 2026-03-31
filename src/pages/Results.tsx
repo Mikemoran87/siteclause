@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AnalysisResult, Claim } from '../types'
+import ContractChat from '../components/ContractChat'
 
 interface Props {
   results: AnalysisResult
@@ -123,6 +124,17 @@ export default function Results({ results, onReset }: Props) {
           {results.claims.map(claim => (
             <ClaimCard key={claim.id} claim={claim} />
           ))}
+        </div>
+
+        {/* Contract Chat */}
+        <div className="mt-8">
+          <h2 className="font-bold text-gray-900 mb-4 uppercase tracking-widest text-sm">
+            Ask Your Contract
+          </h2>
+          <ContractChat
+            contractText={results.contractText || ''}
+            projectName={results.projectName}
+          />
         </div>
 
         {/* CTA */}

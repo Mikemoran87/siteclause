@@ -22,4 +22,5 @@ export interface AnalysisResult {
   claims: Claim[]
   deadlines: DeadlineItem[]
   summary: string
+  contractText?: string
 }
