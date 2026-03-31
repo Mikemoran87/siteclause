@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { analyseDocuments } from '../lib/analyse'
 import { DEMO_CONTRACT, DEMO_CORRESPONDENCE } from '../lib/demo-data'
 import type { AnalysisResult } from '../types'
@@ -14,6 +14,10 @@ interface FileItem {
 }
 
 export default function Upload({ onBack, onResults }: Props) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
   const [files, setFiles] = useState<FileItem[]>([])
   const [pastedText, setPastedText] = useState('')
   const [analysing, setAnalysing] = useState(false)

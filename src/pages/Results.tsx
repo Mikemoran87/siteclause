@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { AnalysisResult, Claim } from '../types'
 import ContractChat from '../components/ContractChat'
 
@@ -70,6 +70,10 @@ function ClaimCard({ claim }: { claim: Claim }) {
 }
 
 export default function Results({ results, onReset }: Props) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Nav */}
