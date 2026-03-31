@@ -10,8 +10,6 @@ interface Props {
   projectName: string
 }
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY
-
 const SUGGESTED_QUESTIONS = [
   "If the MC is late delivering materials, can I claim delay damages?",
   "What does the variation notice clause mean in plain English?",
@@ -38,49 +36,28 @@ export default function ContractChat({ contractText, projectName }: Props) {
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return
     const userMessage: Message = { role: 'user', content: text }
-    setMessages(prev => [...prev, userMessage])
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
     setInput('')
     setLoading(true)
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `You are SiteClause, an expert AI construction contract advisor. You have read the following subcontract and can answer any question about it clearly and precisely.
-
-Your job is to help contractors and subcontractors understand their rights, obligations, and entitlements under this contract. Always:
-- Answer in plain English — no legal jargon unless asked
-- Reference specific clause numbers when relevant
-- Be direct and practical — tell them what they can actually do
-- If they ask about claiming something, tell them the exact steps and deadlines
-- Always add a brief disclaimer at the end: "Note: This is AI-generated guidance, not legal advice."
-
-CONTRACT:
-${contractText.slice(0, 10000)}`
-            },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: text }
-          ],
-          temperature: 0.3,
+          contractText,
+          messages: updatedMessages.map(m => ({ role: m.role, content: m.content }))
         }),
       })
 
       if (!response.ok) throw new Error('API error')
       const data = await response.json()
-      const reply = data.choices[0].message.content
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I had trouble answering that. Please check your OpenAI credits and try again.'
+        content: 'Sorry, I had trouble answering that. Please try again.'
       }])
     }
     setLoading(false)
