@@ -134,6 +134,59 @@ export default function Landing({ onStart }: Props) {
         </div>
       </section>
 
+      {/* Ask Your Contract feature highlight */}
+      <section className="max-w-5xl mx-auto px-6 py-16">
+        <div className="bg-gray-900 rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-2 gap-0">
+            {/* Left — copy */}
+            <div className="p-10 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wide w-fit">
+                New Feature
+              </div>
+              <h2 className="text-3xl font-black text-white leading-tight mb-4">
+                Ask your contract<br />anything.
+              </h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                Once SiteClause reads your contract, you can ask it any question in plain English. What are my notice deadlines? Can the MC back-charge me? What does clause 5.3 actually mean? Get precise answers based on your actual contract — not a generic template.
+              </p>
+              <div className="space-y-2">
+                {[
+                  "If the MC is late, can I claim delay damages?",
+                  "What happens if I do extra work without a VO?",
+                  "Can the main contractor back-charge me without notice?",
+                ].map(q => (
+                  <div key={q} className="flex items-center gap-2 text-sm text-gray-400">
+                    <span className="text-amber-500 flex-shrink-0">→</span>
+                    <span className="italic">"{q}"</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Right — mock chat */}
+            <div className="bg-gray-800 p-8 flex flex-col justify-center gap-4">
+              <div className="flex gap-3 items-start">
+                <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">SC</div>
+                <div className="bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-200 leading-relaxed">
+                  I've read your Oakfield Rise JCT subcontract. Ask me anything about it.
+                </div>
+              </div>
+              <div className="flex gap-3 items-start justify-end">
+                <div className="bg-amber-500 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white leading-relaxed">
+                  If the MC delayed my concrete pour by 2 days, can I claim standing time?
+                </div>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">SC</div>
+                <div className="bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-200 leading-relaxed">
+                  Yes — under <span className="text-amber-400 font-semibold">Clause 7.1</span>, you're entitled to loss and expense for MC-caused delays. You must give written notice within <span className="text-amber-400 font-semibold">7 days</span> of the delay event with contemporary records of costs. Your site diary entries will support this claim.
+                  <span className="block text-gray-500 text-xs mt-2">Note: AI-generated guidance, not legal advice.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Who it's for */}
       <section className="bg-gray-50 border-y border-gray-100 py-16">
         <div className="max-w-4xl mx-auto px-6">
