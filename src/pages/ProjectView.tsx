@@ -16,14 +16,21 @@ interface Props {
   onBack: () => void
 }
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Overview', icon: '🏗️' },
-  { id: 'contract', label: 'Contract', icon: '📄' },
-  { id: 'correspondence', label: 'Correspondence', icon: '📧' },
-  { id: 'variations', label: 'Variations', icon: '📋' },
-  { id: 'notices', label: 'Notices', icon: '📬' },
-  { id: 'chat', label: 'Chat', icon: '💬' },
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'contract', label: 'Contract' },
+  { id: 'correspondence', label: 'Correspondence' },
+  { id: 'variations', label: 'Variations' },
+  { id: 'notices', label: 'Notices' },
+  { id: 'chat', label: 'Chat' },
 ]
+
+const STATUS_COLORS: Record<string, string> = {
+  Active: 'bg-green-100 text-green-700',
+  Completed: 'bg-blue-100 text-blue-700',
+  'On Hold': 'bg-gray-100 text-gray-600',
+  Disputed: 'bg-red-100 text-red-700',
+}
 
 export default function ProjectView({ projectId, userId, onBack }: Props) {
   const [project, setProject] = useState<Project | null>(null)
@@ -43,87 +50,96 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400">Loading project…</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-400 text-sm">Loading project…</div>
       </div>
     )
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-gray-500 mb-4">Project not found.</div>
-          <button onClick={onBack} className="text-[#1B4332] font-semibold">← Back to Dashboard</button>
+          <div className="text-gray-500 mb-4 text-sm">Project not found.</div>
+          <button onClick={onBack} className="text-gray-700 font-semibold text-sm hover:text-gray-900">
+            ← Back to Dashboard
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Nav */}
-      <nav className="bg-[#1B4332] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="text-green-300 hover:text-white transition-colors text-sm font-semibold flex items-center gap-1"
-          >
-            ← Dashboard
-          </button>
-          <span className="text-green-700">|</span>
-          <div className="text-white font-bold text-sm truncate max-w-xs">{project.name}</div>
+    <div className="min-h-screen bg-white font-sans">
+
+      {/* ── Top Nav ── */}
+      <nav className="bg-[#111] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="text-lg font-black tracking-tight select-none">
+            <span className="text-[#F59E0B]">Site</span>
+            <span className="text-white">Clause</span>
+          </div>
         </div>
-        <div className="text-xl font-black tracking-tight">
-          <span className="text-amber-400">Site</span>
-          <span className="text-white">Clause</span>
-        </div>
+        <button
+          onClick={onBack}
+          className="text-gray-400 hover:text-white text-sm transition-colors"
+        >
+          ← Dashboard
+        </button>
       </nav>
 
-      {/* Project title bar */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-black text-gray-900">{project.name}</h1>
-            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-              {project.main_contractor && <span>{project.main_contractor}</span>}
-              {project.contract_value && <span>· {project.contract_value}</span>}
-            </div>
+      {/* ── Breadcrumb + Project Title ── */}
+      <div className="border-b border-gray-100 bg-white px-6 py-5">
+        <div className="max-w-5xl mx-auto">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+            <button onClick={onBack} className="hover:text-gray-600 transition-colors">SiteClause</button>
+            <span>/</span>
+            <span className="text-gray-700 font-medium">{project.name}</span>
           </div>
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${
-            project.status === 'Active' ? 'bg-green-100 text-green-700' :
-            project.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
-            project.status === 'On Hold' ? 'bg-amber-100 text-amber-700' :
-            'bg-red-100 text-red-700'
-          }`}>
-            {project.status}
-          </span>
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-black text-gray-900">{project.name}</h1>
+              <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
+                {project.main_contractor && <span>{project.main_contractor}</span>}
+                {project.contract_value && (
+                  <>
+                    {project.main_contractor && <span>·</span>}
+                    <span>{project.contract_value}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_COLORS[project.status] ?? 'bg-gray-100 text-gray-600'}`}>
+              {project.status}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+      {/* ── Tab Bar ── */}
+      <div className="bg-white border-b border-gray-100 sticky top-[57px] z-40">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex overflow-x-auto">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                className={`px-4 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
                   activeTab === tab.id
-                    ? 'border-[#1B4332] text-[#1B4332]'
+                    ? 'border-gray-900 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                {tab.label}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Tab content */}
+      {/* ── Tab Content ── */}
       <div className="max-w-5xl mx-auto px-6 py-8">
         {activeTab === 'overview' && (
           <OverviewTab project={project} onUpdated={loadProject} />
