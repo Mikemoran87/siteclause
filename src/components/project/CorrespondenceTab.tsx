@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { saveCorrespondence, getCorrespondence, deleteCorrespondence } from '../../lib/db'
 import type { Correspondence } from '../../lib/db'
 
@@ -16,7 +16,9 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
   const [pasteText, setPasteText] = useState('')
   const [source, setSource] = useState('')
   const [error, setError] = useState('')
+  const [ocrLoading, setOcrLoading] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     load()
@@ -38,10 +40,57 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
       const text = await file.text()
       await saveCorrespondence(projectId, userId, text, file.name)
       await load()
-    } catch (err: any) {
-      setError(err.message || 'Upload failed')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      setError(message)
     }
     setSaving(false)
+    e.target.value = ''
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError('')
+    setOcrLoading(true)
+
+    try {
+      // Convert image to base64 in the browser
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Strip the data URL prefix (e.g. "data:image/jpeg;base64,")
+          const b64 = result.split(',')[1]
+          if (b64) resolve(b64)
+          else reject(new Error('Failed to read image'))
+        }
+        reader.onerror = () => reject(new Error('Failed to read image'))
+        reader.readAsDataURL(file)
+      })
+
+      const response = await fetch('/api/ocr-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+      })
+
+      const data = await response.json() as { text?: string; error?: string }
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'OCR failed')
+      }
+
+      // Pre-fill the paste modal with extracted text
+      setPasteText(data.text || '')
+      setSource(`Screenshot: ${file.name}`)
+      setShowAdd(true)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'OCR failed'
+      setError(`Couldn't read the image (${message}) — try pasting the text instead`)
+    }
+
+    setOcrLoading(false)
     e.target.value = ''
   }
 
@@ -55,8 +104,9 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
       setSource('')
       setShowAdd(false)
       await load()
-    } catch (err: any) {
-      setError(err.message || 'Save failed')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Save failed'
+      setError(message)
     }
     setSaving(false)
   }
@@ -99,13 +149,14 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button
           onClick={() => { setShowAdd(true); setError('') }}
           className="bg-[#1B4332] hover:bg-[#2D6A4F] text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
         >
           + Paste Correspondence
         </button>
+
         <label className="border-2 border-[#1B4332] text-[#1B4332] font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-green-50 transition-colors cursor-pointer">
           {saving ? 'Uploading…' : '↑ Upload File'}
           <input
@@ -116,7 +167,30 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
             disabled={saving}
           />
         </label>
+
+        <label className={`border-2 border-[#1B4332] text-[#1B4332] font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-green-50 transition-colors cursor-pointer ${ocrLoading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+          {ocrLoading ? 'Reading image with AI…' : '📷 Upload Screenshot'}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/heic,.heic,.heif"
+            onChange={handleImageUpload}
+            className="hidden"
+            disabled={ocrLoading}
+          />
+        </label>
       </div>
+
+      {/* OCR loading indicator */}
+      {ocrLoading && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+          <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          Reading image with AI — this takes a few seconds…
+        </div>
+      )}
 
       {/* List */}
       {items.length === 0 ? (
@@ -167,13 +241,13 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
         </div>
       )}
 
-      {/* Paste modal */}
+      {/* Paste / OCR review modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-bold text-gray-900">Add Correspondence</h3>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => { setShowAdd(false); setPasteText(''); setSource('') }} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -198,7 +272,7 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
               </div>
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => setShowAdd(false)}
+                  onClick={() => { setShowAdd(false); setPasteText(''); setSource('') }}
                   className="text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5"
                 >Cancel</button>
                 <button
