@@ -148,7 +148,11 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
           <ContractTab projectId={projectId} userId={userId} />
         )}
         {activeTab === 'correspondence' && (
-          <CorrespondenceTab projectId={projectId} userId={userId} />
+          <CorrespondenceTab
+            projectId={projectId}
+            userId={userId}
+            emailPrefix={project.email_prefix ?? `sc-${project.id.slice(0, 8)}`}
+          />
         )}
         {activeTab === 'variations' && (
           <VariationsTab projectId={projectId} userId={userId} />

@@ -11,6 +11,7 @@ export interface Project {
   start_date?: string
   status: string
   notes?: string
+  email_prefix?: string
   created_at: string
 }
 
@@ -85,9 +86,11 @@ export async function getProjects(userId: string): Promise<Project[]> {
 }
 
 export async function createProject(userId: string, input: ProjectInput): Promise<Project> {
+  const id = crypto.randomUUID()
+  const email_prefix = `sc-${id.slice(0, 8)}`
   const { data, error } = await supabase
     .from('projects')
-    .insert({ ...input, user_id: userId })
+    .insert({ ...input, id, user_id: userId, email_prefix })
     .select()
     .single()
   if (error) throw error

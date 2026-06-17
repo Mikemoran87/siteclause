@@ -5,9 +5,10 @@ import type { Correspondence } from '../../lib/db'
 interface Props {
   projectId: string
   userId: string
+  emailPrefix: string
 }
 
-export default function CorrespondenceTab({ projectId, userId }: Props) {
+export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Props) {
   const [items, setItems] = useState<Correspondence[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -68,11 +69,34 @@ export default function CorrespondenceTab({ projectId, userId }: Props) {
 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
 
+  const projectEmail = `${emailPrefix}@in.siteclause.io`
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText(projectEmail).catch(() => {})
+  }
+
   return (
     <div className="space-y-5">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{error}</div>
       )}
+
+      {/* Email forwarding info box */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-1">
+          📧 Your Project Email Address
+        </div>
+        <div className="font-mono text-sm text-gray-800 mb-2">{projectEmail}</div>
+        <p className="text-xs text-gray-500">
+          CC or forward any site emails to this address — they'll appear here automatically.
+        </p>
+        <button
+          onClick={handleCopyEmail}
+          className="mt-2 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
+        >
+          Copy address →
+        </button>
+      </div>
 
       {/* Actions */}
       <div className="flex gap-3">
