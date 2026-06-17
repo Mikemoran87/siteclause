@@ -79,14 +79,8 @@ export default function AuthPage() {
               onClick={scrollToLogin}
               className="bg-[#111] hover:bg-[#333] text-white font-semibold px-8 py-3.5 rounded-full text-base transition-colors"
             >
-              Get Started Free →
-            </button>
-            <a
-              href="/demo"
-              className="border border-gray-300 hover:border-gray-400 text-gray-700 font-semibold px-8 py-3.5 rounded-full text-base transition-colors"
-            >
               Try the Demo →
-            </a>
+            </button>
           </div>
           <p className="text-sm text-gray-400">No credit card needed.</p>
 
