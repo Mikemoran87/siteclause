@@ -48,7 +48,6 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
     setInput('')
     setLoading(true)
 
-    // Optimistic add
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       user_id: userId,
@@ -59,10 +58,8 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
     }
     setMessages(prev => [...prev, userMsg])
 
-    // Persist to DB
     await saveChatMessage(projectId, userId, 'user', text)
 
-    // Build history for API
     const history = [...messages, userMsg].map(m => ({ role: m.role ?? 'user', content: m.content ?? '' }))
 
     try {
@@ -112,26 +109,26 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm flex flex-col">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-[#1B4332] flex items-center justify-center text-white font-bold text-sm">SC</div>
+      <div className="px-4 md:px-5 py-3 md:py-4 border-b border-gray-100 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-[#1B4332] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">SC</div>
         <div>
           <div className="font-bold text-gray-900 text-sm">Ask Your Contract</div>
           <div className="text-xs text-gray-400">{projectName} · AI contract advisor</div>
         </div>
       </div>
 
-      {/* Suggested */}
+      {/* Suggested questions */}
       {messages.length === 0 && (
-        <div className="px-5 pt-4 pb-2">
+        <div className="px-4 md:px-5 pt-4 pb-2">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Suggested questions</div>
           <div className="flex flex-wrap gap-2">
             {SUGGESTED_QUESTIONS.map(q => (
               <button
                 key={q}
                 onClick={() => sendMessage(q)}
-                className="text-xs bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors text-left"
+                className="text-xs bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-full hover:bg-amber-100 transition-colors text-left min-h-[36px]"
               >
                 {q}
               </button>
@@ -142,7 +139,7 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
 
       {/* Welcome message */}
       {messages.length === 0 && (
-        <div className="px-5 py-4">
+        <div className="px-4 md:px-5 py-4">
           <div className="flex gap-3">
             <div className="w-7 h-7 rounded-full bg-[#1B4332] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">SC</div>
             <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-700">
@@ -154,7 +151,7 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
 
       {/* Messages */}
       {messages.length > 0 && (
-        <div className="px-5 py-4 space-y-4 max-h-96 overflow-y-auto">
+        <div className="px-4 md:px-5 py-4 space-y-4 max-h-[60vh] md:max-h-96 overflow-y-auto">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
@@ -186,20 +183,20 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
       )}
 
       {/* Input */}
-      <div className="px-5 py-4 border-t border-gray-100">
-        <form onSubmit={e => { e.preventDefault(); sendMessage(input) }} className="flex gap-3">
+      <div className="px-4 md:px-5 py-3 md:py-4 border-t border-gray-100">
+        <form onSubmit={e => { e.preventDefault(); sendMessage(input) }} className="flex gap-2 md:gap-3">
           <input
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask anything about your contract…"
-            className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332] min-h-[44px]"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="bg-[#1B4332] hover:bg-[#2D6A4F] disabled:opacity-40 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+            className="bg-[#1B4332] hover:bg-[#2D6A4F] disabled:opacity-40 text-white font-bold px-4 md:px-5 py-3 rounded-xl text-sm transition-colors min-h-[44px]"
           >
             Send
           </button>

@@ -7,6 +7,7 @@ import CorrespondenceTab from '../components/project/CorrespondenceTab'
 import VariationsTab from '../components/project/VariationsTab'
 import NoticesTab from '../components/project/NoticesTab'
 import ChatTab from '../components/project/ChatTab'
+import BottomNav from '../components/BottomNav'
 
 type Tab = 'overview' | 'contract' | 'correspondence' | 'variations' | 'notices' | 'chat'
 
@@ -73,35 +74,35 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
     <div className="min-h-screen bg-white font-sans">
 
       {/* ── Top Nav ── */}
-      <nav className="bg-[#111] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+      <nav className="bg-[#111] px-4 md:px-6 py-3 md:py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="text-lg font-black tracking-tight select-none">
+          <div className="text-base md:text-lg font-black tracking-tight select-none">
             <span className="text-[#F59E0B]">Site</span>
             <span className="text-white">Clause</span>
           </div>
         </div>
         <button
           onClick={onBack}
-          className="text-gray-400 hover:text-white text-sm transition-colors"
+          className="text-gray-400 hover:text-white text-sm transition-colors min-h-[44px] flex items-center"
         >
           ← Dashboard
         </button>
       </nav>
 
       {/* ── Breadcrumb + Project Title ── */}
-      <div className="border-b border-gray-100 bg-white px-6 py-5">
+      <div className="border-b border-gray-100 bg-white px-4 md:px-6 py-3 md:py-5">
         <div className="max-w-5xl mx-auto">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+          {/* Breadcrumb — hidden on mobile to save space */}
+          <div className="hidden md:flex items-center gap-2 text-xs text-gray-400 mb-3">
             <button onClick={onBack} className="hover:text-gray-600 transition-colors">SiteClause</button>
             <span>/</span>
             <span className="text-gray-700 font-medium">{project.name}</span>
           </div>
           {/* Title row */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-black text-gray-900">{project.name}</h1>
-              <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-base md:text-xl font-black text-gray-900 leading-tight">{project.name}</h1>
+              <div className="flex items-center gap-2 mt-0.5 md:mt-1 text-xs md:text-sm text-gray-400 flex-wrap">
                 {project.main_contractor && <span>{project.main_contractor}</span>}
                 {project.contract_value && (
                   <>
@@ -118,8 +119,8 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
         </div>
       </div>
 
-      {/* ── Tab Bar ── */}
-      <div className="bg-white border-b border-gray-100 sticky top-[57px] z-40">
+      {/* ── Tab Bar — desktop only ── */}
+      <div className="hidden md:block bg-white border-b border-gray-100 sticky top-[57px] z-40">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex overflow-x-auto">
             {TABS.map(tab => (
@@ -140,7 +141,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
       </div>
 
       {/* ── Tab Content ── */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-8 pb-24 md:pb-8">
         {activeTab === 'overview' && (
           <OverviewTab project={project} onUpdated={loadProject} />
         )}
@@ -164,6 +165,9 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
           <ChatTab projectId={projectId} userId={userId} projectName={project.name} />
         )}
       </div>
+
+      {/* ── Bottom Nav — mobile only ── */}
+      <BottomNav activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)} />
     </div>
   )
 }

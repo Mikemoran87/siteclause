@@ -41,7 +41,7 @@ export default function NoticesTab({ projectId }: Props) {
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 md:space-y-5">
       <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-lg">
         <strong>Formal notices</strong> from your variation claims — ready to copy or download and send.
       </div>
@@ -58,30 +58,32 @@ export default function NoticesTab({ projectId }: Props) {
         <div className="space-y-4">
           {variations.map((v) => (
             <div key={v.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
-                <div>
-                  <div className="font-bold text-gray-900 text-sm">{v.title || 'Untitled variation'}</div>
-                  {v.value && <div className="text-xs text-amber-600 font-semibold mt-0.5">{v.value}</div>}
-                  {v.deadline && (
-                    <div className="text-xs text-red-500 mt-0.5">⏰ Deadline: {v.deadline}</div>
-                  )}
+              <div className="px-4 md:px-5 py-4 border-b border-gray-100">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <div className="font-bold text-gray-900 text-sm">{v.title || 'Untitled variation'}</div>
+                    {v.value && <div className="text-xs text-amber-600 font-semibold mt-0.5">{v.value}</div>}
+                    {v.deadline && (
+                      <div className="text-xs text-red-500 mt-0.5">⏰ Deadline: {v.deadline}</div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleCopy(v.id, v.notice_drafted ?? '')}
-                    className="text-xs font-semibold text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors"
+                    className="flex-1 sm:flex-none text-xs font-semibold text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-3 py-2.5 hover:bg-amber-100 transition-colors min-h-[44px] flex items-center justify-center gap-1"
                   >
                     {copied === v.id ? '✓ Copied!' : '📋 Copy'}
                   </button>
                   <button
                     onClick={() => handleDownload(v.title ?? 'notice', v.notice_drafted ?? '')}
-                    className="text-xs font-semibold text-[#1B4332] border border-[#1B4332] rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+                    className="flex-1 sm:flex-none text-xs font-semibold text-[#1B4332] border border-[#1B4332] rounded-lg px-3 py-2.5 hover:bg-green-50 transition-colors min-h-[44px] flex items-center justify-center gap-1"
                   >
                     ↓ Download
                   </button>
                 </div>
               </div>
-              <div className="p-5">
+              <div className="p-4 md:p-5">
                 <div className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-3">
                   AI-Drafted Variation Notice
                 </div>

@@ -30,17 +30,17 @@ export default function OverviewTab({ project, onUpdated }: Props) {
   if (!editing) {
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-900">Project Details</h2>
             <button
               onClick={() => setEditing(true)}
-              className="text-sm text-[#1B4332] font-semibold border border-[#1B4332] rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+              className="text-sm text-[#1B4332] font-semibold border border-[#1B4332] rounded-lg px-3 py-2 hover:bg-green-50 transition-colors min-h-[44px] flex items-center"
             >
               Edit
             </button>
           </div>
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
             <div>
               <dt className="text-xs font-bold text-gray-400 uppercase tracking-wide">Project Name</dt>
               <dd className="mt-1 font-semibold text-gray-900">{project.name}</dd>
@@ -78,16 +78,16 @@ export default function OverviewTab({ project, onUpdated }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
       <h2 className="font-bold text-gray-900 mb-4">Edit Project Details</h2>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+        <div className="md:col-span-2">
           <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Project Name *</label>
           <input
             type="text"
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
           />
         </div>
         <div>
@@ -96,7 +96,7 @@ export default function OverviewTab({ project, onUpdated }: Props) {
             type="text"
             value={form.main_contractor}
             onChange={e => setForm(f => ({ ...f, main_contractor: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
           />
         </div>
         <div>
@@ -105,7 +105,7 @@ export default function OverviewTab({ project, onUpdated }: Props) {
             type="text"
             value={form.contract_value}
             onChange={e => setForm(f => ({ ...f, contract_value: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
           />
         </div>
         <div>
@@ -114,7 +114,7 @@ export default function OverviewTab({ project, onUpdated }: Props) {
             type="date"
             value={form.start_date}
             onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
           />
         </div>
         <div>
@@ -122,7 +122,7 @@ export default function OverviewTab({ project, onUpdated }: Props) {
           <select
             value={form.status}
             onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
           >
             <option>Active</option>
             <option>On Hold</option>
@@ -130,25 +130,25 @@ export default function OverviewTab({ project, onUpdated }: Props) {
             <option>Disputed</option>
           </select>
         </div>
-        <div className="col-span-2">
+        <div className="md:col-span-2">
           <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Notes</label>
           <textarea
             value={form.notes}
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             rows={3}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
           />
         </div>
       </div>
-      <div className="mt-4 flex gap-3 justify-end">
+      <div className="mt-4 flex flex-col md:flex-row gap-3 md:justify-end">
         <button
           onClick={() => setEditing(false)}
-          className="text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5"
+          className="w-full md:w-auto text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-3 min-h-[44px]"
         >Cancel</button>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-[#1B4332] hover:bg-[#2D6A4F] disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
+          className="w-full md:w-auto bg-[#1B4332] hover:bg-[#2D6A4F] disabled:opacity-50 text-white font-bold px-5 py-3 rounded-xl text-sm min-h-[44px]"
         >
           {saving ? 'Saving…' : 'Save Changes'}
         </button>
