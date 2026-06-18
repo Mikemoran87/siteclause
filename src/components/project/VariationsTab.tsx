@@ -98,7 +98,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
           <span className="text-sm font-semibold text-green-200">{variations.length} variation{variations.length !== 1 ? 's' : ''} tracked</span>
           {totalValue > 0 && (
             <span className="font-black text-amber-400 text-lg">
-              £{totalValue.toLocaleString()} estimated
+              €{totalValue.toLocaleString()} estimated
             </span>
           )}
         </div>

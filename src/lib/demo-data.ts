@@ -45,19 +45,19 @@ CLAUSE 8 — UNFORESEEN CONDITIONS
 8.3 The Subcontractor shall keep contemporary records of all additional costs incurred.
 
 CLAUSE 12 — INSURANCE
-12.1 The Subcontractor shall maintain public liability insurance of not less than £6,500,000.
+12.1 The Subcontractor shall maintain public liability insurance of not less than €6,500,000.
 12.2 Evidence of insurance shall be provided to the Main Contractor on request.
 
 SCHEDULE OF RATES:
-- Excavation (bulk): £18.50/m³
-- Excavation (rock): £95.00/m³
-- Concrete (foundations): £185/m³
-- Drainage (100mm): £45/m
-- Drainage (150mm): £68/m
-- Blockwork (below ground): £52/m²
-- General labourer: £42/hour
-- Plant (360 excavator): £95/hour
-- Project manager / foreman: £65/hour
+- Excavation (bulk): €18.50/m³
+- Excavation (rock): €95.00/m³
+- Concrete (foundations): €185/m³
+- Drainage (100mm): €45/m
+- Drainage (150mm): €68/m
+- Blockwork (below ground): €52/m²
+- General labourer: €42/hour
+- Plant (360 excavator): €95/hour
+- Project manager / foreman: €65/hour
 `
 
 export const DEMO_CORRESPONDENCE = `===== WHATSAPP GROUP: Oakfield Rise Site — Fennell Civil =====
@@ -138,9 +138,9 @@ Tommy, noted. Get the works done first and we'll price it up at the end of the m
 Week ending 28 November 2025:
 - Concrete pour for northern strip foundations delayed — Bradstone's concrete
   pump broke down Monday 24 Nov. Our crew on standby all day Monday and
-  Tuesday morning. 14 men x 2 days = 112 man hours lost at £42/hour = £4,704
-- Plant standing: 360 excavator idle Mon/Tue = 16 hours x £95 = £1,520
-- Total standing time this week: £6,224
+  Tuesday morning. 14 men x 2 days = 112 man hours lost at €42/hour = €4,704
+- Plant standing: 360 excavator idle Mon/Tue = 16 hours x €95 = €1,520
+- Total standing time this week: €6,224
 - NOTE: No delay notice submitted to Bradstone yet
 
 Week ending 5 December 2025:
@@ -152,8 +152,8 @@ Week ending 12 December 2025:
 - Southern drainage revision (Rev B drawings) substantially complete
 - Additional works: 180m of 150mm pipe re-routed, 3 manholes, additional
   excavation approx 120m³
-- Labour: 4 men x 8 days = 256 hours at £42 = £10,752
-- Materials: pipe and manholes approx £14,800
+- Labour: 4 men x 8 days = 256 hours at €42 = €10,752
+- Materials: pipe and manholes approx €14,800
 - No formal VO issued yet by Bradstone
 
 ===== EMAIL — JANUARY 2026 =====

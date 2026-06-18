@@ -177,7 +177,7 @@ export default function Dashboard({ userId, onSelectProject }: Props) {
                   <input
                     type="text" value={form.contract_value}
                     onChange={e => setForm(f => ({ ...f, contract_value: e.target.value }))}
-                    placeholder="e.g. £2,850,000"
+                    placeholder="e.g. €2,850,000"
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                   />
                 </div>

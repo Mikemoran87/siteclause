@@ -117,9 +117,9 @@ export default function AuthPage() {
                 {/* Mock project cards */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { name: 'Oakfield Rise — Civil Works', mc: 'Bradstone Construction', value: '£2,850,000', vars: 7, status: 'Active' },
-                    { name: 'Harbour Gate Tower B', mc: 'Connell Group', value: '£1,200,000', vars: 3, status: 'Active' },
-                    { name: 'Westfield Retail Fit-Out', mc: 'Murphy & Sons', value: '£680,000', vars: 1, status: 'On Hold' },
+                    { name: 'Oakfield Rise — Civil Works', mc: 'Bradstone Construction', value: '€2,850,000', vars: 7, status: 'Active' },
+                    { name: 'Harbour Gate Tower B', mc: 'Connell Group', value: '€1,200,000', vars: 3, status: 'Active' },
+                    { name: 'Westfield Retail Fit-Out', mc: 'Murphy & Sons', value: '€680,000', vars: 1, status: 'On Hold' },
                   ].map((p) => (
                     <div key={p.name} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
