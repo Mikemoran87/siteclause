@@ -16,12 +16,30 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUSES = ['Draft', 'Sent', 'Agreed', 'Disputed']
 
+interface CostCalc {
+  labourHours: string
+  labourRate: string
+  materials: string
+  overhead: string
+}
+
+function calcTotal(c: CostCalc): number {
+  const hours = parseFloat(c.labourHours) || 0
+  const rate = parseFloat(c.labourRate) || 0
+  const mats = parseFloat(c.materials) || 0
+  const oh = parseFloat(c.overhead) || 0
+  const subtotal = (hours * rate) + mats
+  return subtotal * (1 + oh / 100)
+}
+
 export default function VariationsTab({ projectId, userId }: Props) {
   const [variations, setVariations] = useState<Variation[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [showCalc, setShowCalc] = useState<string | null>(null)
+  const [calc, setCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
   const [form, setForm] = useState<VariationInput>({
     title: '',
     description: '',
@@ -30,6 +48,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
     deadline: '',
     notice_drafted: '',
   })
+  const [formCalc, setFormCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
 
   useEffect(() => {
     load()
@@ -139,13 +158,73 @@ export default function VariationsTab({ projectId, userId }: Props) {
                 </div>
               </div>
               {expanded === v.id && (
-                <div className="border-t border-gray-100 px-5 py-4 space-y-3">
+                <div className="border-t border-gray-100 px-5 py-4 space-y-4">
                   {v.description && (
                     <div>
                       <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Description</div>
                       <p className="text-sm text-gray-700">{v.description}</p>
                     </div>
                   )}
+
+                  {/* Cost Calculator */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">💰 Cost Calculator</div>
+                      <button
+                        onClick={() => {
+                          if (showCalc === v.id) { setShowCalc(null) } else {
+                            setShowCalc(v.id)
+                            setCalc({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
+                          }
+                        }}
+                        className="text-xs text-[#1B4332] font-semibold"
+                      >
+                        {showCalc === v.id ? 'Hide' : 'Calculate value →'}
+                      </button>
+                    </div>
+                    {showCalc === v.id && (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Labour hours</label>
+                            <input type="number" min="0" placeholder="0" value={calc.labourHours}
+                              onChange={e => setCalc(c => ({ ...c, labourHours: e.target.value }))}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1B4332]" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Labour rate (€/hr)</label>
+                            <input type="number" min="0" placeholder="0" value={calc.labourRate}
+                              onChange={e => setCalc(c => ({ ...c, labourRate: e.target.value }))}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1B4332]" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Materials (€)</label>
+                            <input type="number" min="0" placeholder="0" value={calc.materials}
+                              onChange={e => setCalc(c => ({ ...c, materials: e.target.value }))}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1B4332]" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Overhead %</label>
+                            <input type="number" min="0" max="100" placeholder="15" value={calc.overhead}
+                              onChange={e => setCalc(c => ({ ...c, overhead: e.target.value }))}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1B4332]" />
+                          </div>
+                        </div>
+                        {calcTotal(calc) > 0 && (
+                          <div className="bg-[#1B4332] text-white rounded-lg px-4 py-3 flex items-center justify-between">
+                            <span className="text-sm font-semibold">Estimated value</span>
+                            <span className="text-xl font-black text-amber-400">
+                              €{calcTotal(calc).toLocaleString('en-IE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </span>
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-400">
+                          Labour: €{((parseFloat(calc.labourHours)||0) * (parseFloat(calc.labourRate)||0)).toFixed(0)} + Materials: €{(parseFloat(calc.materials)||0).toFixed(0)} + Overhead ({calc.overhead}%)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {v.notice_drafted && (
                     <div>
                       <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Draft Notice</div>
@@ -197,15 +276,55 @@ export default function VariationsTab({ projectId, userId }: Props) {
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Estimated Value</label>
-                  <input
-                    type="text"
-                    value={form.value}
-                    onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
-                    placeholder="e.g. £8,500"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={form.value}
+                      onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+                      placeholder="e.g. €8,500"
+                      className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]"
+                    />
+                    <button type="button" onClick={() => setFormCalc(c => ({ ...c, labourHours: c.labourHours ? '' : '0' }))}
+                      className="text-xs border border-gray-200 rounded-xl px-3 py-2 text-gray-500 hover:bg-gray-50">
+                      🧮 Calculate
+                    </button>
+                  </div>
+                  {/* Inline calc */}
+                  <div className="mt-2 bg-gray-50 rounded-xl p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Labour hrs', key: 'labourHours', placeholder: '0' },
+                        { label: 'Rate €/hr', key: 'labourRate', placeholder: '45' },
+                        { label: 'Materials €', key: 'materials', placeholder: '0' },
+                        { label: 'Overhead %', key: 'overhead', placeholder: '15' },
+                      ].map(f => (
+                        <div key={f.key}>
+                          <label className="block text-xs text-gray-400 mb-0.5">{f.label}</label>
+                          <input type="number" min="0" placeholder={f.placeholder}
+                            value={formCalc[f.key as keyof CostCalc]}
+                            onChange={e => setFormCalc(c => ({ ...c, [f.key]: e.target.value }))}
+                            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#1B4332]" />
+                        </div>
+                      ))}
+                    </div>
+                    {calcTotal(formCalc) > 0 && (
+                      <div className="flex items-center justify-between bg-[#1B4332] text-white rounded-lg px-3 py-2">
+                        <span className="text-xs">Calculated value</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-amber-400">
+                            €{calcTotal(formCalc).toLocaleString('en-IE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </span>
+                          <button type="button"
+                            onClick={() => setForm(f => ({ ...f, value: `€${calcTotal(formCalc).toLocaleString('en-IE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }))}
+                            className="text-xs bg-white/20 hover:bg-white/30 rounded px-2 py-0.5">
+                            Use →
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Status</label>
