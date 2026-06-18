@@ -179,6 +179,28 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
             disabled={ocrLoading}
           />
         </label>
+
+        <label className="border-2 border-green-500 text-green-700 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-green-50 transition-colors cursor-pointer">
+          💬 WhatsApp Export
+          <input
+            type="file"
+            accept=".txt,.zip"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={saving}
+          />
+        </label>
+      </div>
+
+      {/* WhatsApp export instructions */}
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+        <div className="text-xs font-bold text-green-800 uppercase tracking-wide mb-1">💬 How to export your WhatsApp chat</div>
+        <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+          <li>Open the WhatsApp chat with your main contractor or site team</li>
+          <li>Tap the three dots (⋮) → <strong>More</strong> → <strong>Export Chat</strong></li>
+          <li>Choose <strong>Without Media</strong></li>
+          <li>Save the .txt file and upload it above using the WhatsApp Export button</li>
+        </ol>
       </div>
 
       {/* OCR loading indicator */}
