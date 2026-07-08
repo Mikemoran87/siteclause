@@ -2,12 +2,13 @@ import { useState, useCallback, useEffect } from 'react'
 import type { AnalysisResult } from '../types'
 import { analyseDocuments } from '../lib/analyse'
 import UploadStep from '../components/funnel/UploadStep'
+import CorrespondenceStep from '../components/funnel/CorrespondenceStep'
 import QuestionStep from '../components/funnel/QuestionStep'
 import AnalyzingStep from '../components/funnel/AnalyzingStep'
 import EmailCaptureStep from '../components/funnel/EmailCaptureStep'
 import PreviewStep from '../components/funnel/PreviewStep'
 
-type Stage = 'upload' | 'q1' | 'q2' | 'q3' | 'q4' | 'analyzing' | 'email' | 'preview'
+type Stage = 'upload' | 'correspondence' | 'q1' | 'q2' | 'q3' | 'q4' | 'analyzing' | 'email' | 'preview'
 
 const QUESTIONS = [
   {
@@ -59,7 +60,8 @@ const QUESTIONS = [
 
 const PREV_STAGE: Record<Stage, Stage | null> = {
   upload: null,
-  q1: 'upload',
+  correspondence: 'upload',
+  q1: 'correspondence',
   q2: 'q1',
   q3: 'q2',
   q4: 'q3',
@@ -71,8 +73,9 @@ const PREV_STAGE: Record<Stage, Stage | null> = {
 // Progress bar percentage per stage
 const PROGRESS: Record<Stage, number> = {
   upload: 0,
-  q1: 25,
-  q2: 45,
+  correspondence: 15,
+  q1: 30,
+  q2: 48,
   q3: 65,
   q4: 80,
   analyzing: 90,
@@ -83,6 +86,8 @@ const PROGRESS: Record<Stage, number> = {
 export default function LeadFunnel() {
   const [stage, setStage] = useState<Stage>('upload')
   const [contractFile, setContractFile] = useState<File | null>(null)
+  const [correspondenceFiles, setCorrespondenceFiles] = useState<File[]>([])
+  const [correspondenceText, setCorrespondenceText] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [results, setResults] = useState<AnalysisResult | null>(null)
   const [analysisError, setAnalysisError] = useState('')
@@ -99,7 +104,7 @@ export default function LeadFunnel() {
     setAnalysisDone(false)
     setAnalysisError('')
 
-    analyseDocuments(contractFile, [], '')
+    analyseDocuments(contractFile, correspondenceFiles, correspondenceText)
       .then((r) => {
         setResults(r)
         setAnalysisDone(true)
@@ -112,6 +117,12 @@ export default function LeadFunnel() {
 
   const handleUpload = (file: File) => {
     setContractFile(file)
+    setStage('correspondence')
+  }
+
+  const handleCorrespondence = (files: File[], text: string) => {
+    setCorrespondenceFiles(files)
+    setCorrespondenceText(text)
     setStage('q1')
   }
 
@@ -174,6 +185,13 @@ export default function LeadFunnel() {
       {/* Stages */}
       {stage === 'upload' && (
         <UploadStep onFile={handleUpload} />
+      )}
+
+      {stage === 'correspondence' && (
+        <CorrespondenceStep
+          onContinue={handleCorrespondence}
+          onBack={handleBack}
+        />
       )}
 
       {activeQuestion && (
