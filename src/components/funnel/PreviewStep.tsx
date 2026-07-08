@@ -13,25 +13,32 @@ const SEVERITY_COLOURS: Record<string, string> = {
 
 function ClaimCard({ claim, locked }: { claim: Claim; locked: boolean }) {
   return (
-    <div className={`relative border rounded-2xl p-5 bg-white ${locked ? 'border-gray-100' : 'border-gray-200'}`}>
+    <div className={`relative border rounded-2xl overflow-hidden bg-white ${locked ? 'border-gray-100' : 'border-gray-200 shadow-sm'}`}>
       {locked && (
-        <div className="absolute inset-0 rounded-2xl backdrop-blur-sm bg-white/70 z-10 flex items-center justify-center">
-          <div className="text-center px-4">
-            <div className="text-2xl mb-1">🔒</div>
-            <div className="text-xs font-bold text-gray-500">Create a free account to unlock</div>
-          </div>
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center"
+          style={{ backdropFilter: 'blur(6px)', background: 'rgba(255,255,255,0.75)' }}>
+          <div className="text-2xl mb-1">🔒</div>
+          <div className="text-xs font-bold text-gray-600">Create a free account to unlock</div>
         </div>
       )}
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="font-bold text-gray-900 text-sm leading-snug">{claim.title}</h3>
-        <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 capitalize ${SEVERITY_COLOURS[claim.severity] ?? 'bg-gray-100 text-gray-600'}`}>
-          {claim.severity}
-        </span>
-      </div>
-      <p className="text-sm text-gray-500 mb-3 leading-relaxed">{claim.description}</p>
-      <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-gray-50">
-        <span className="font-medium">Clause {claim.clause}</span>
-        <span className="font-bold text-gray-700">{claim.estimatedValue}</span>
+      <div className={`p-5 ${locked ? 'select-none' : ''}`}>
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className={`font-bold text-sm leading-snug ${locked ? 'text-gray-400' : 'text-gray-900'}`}>
+            {locked ? '█████ ████████ ██ ██████' : claim.title}
+          </h3>
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 capitalize ${locked ? 'bg-gray-100 text-gray-400' : (SEVERITY_COLOURS[claim.severity] ?? 'bg-gray-100 text-gray-600')}`}>
+            {locked ? '······' : claim.severity}
+          </span>
+        </div>
+        <p className={`text-sm mb-3 leading-relaxed ${locked ? 'text-gray-300' : 'text-gray-500'}`}>
+          {locked ? '████████ ████ ██ ████████ ██████ ████ ████████ ████ ██ ████ ████.' : claim.description}
+        </p>
+        <div className={`flex items-center justify-between text-xs pt-3 border-t ${locked ? 'text-gray-300 border-gray-50' : 'text-gray-400 border-gray-100'}`}>
+          <span className="font-medium">{locked ? 'Clause ██' : `Clause ${claim.clause}`}</span>
+          <span className={`font-bold ${locked ? 'text-gray-300' : 'text-amber-600 text-sm'}`}>
+            {locked ? '€██,███' : claim.estimatedValue}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -49,7 +56,7 @@ export default function PreviewStep({ results, name }: Props) {
     : null
 
   const goToSignup = () => {
-    window.location.href = '/#login-section'
+    window.location.href = '/login?signup=1'
   }
 
   return (
@@ -90,18 +97,19 @@ export default function PreviewStep({ results, name }: Props) {
             ))}
           </div>
 
-          <div className="bg-[#F5F5F5] rounded-2xl p-6 text-center mb-6">
-            <div className="font-black text-gray-900 text-lg mb-1">
-              {lockedCount} more claim{lockedCount !== 1 ? 's' : ''} found
+          <div className="bg-[#111] rounded-2xl p-6 text-center mb-6">
+            <div className="font-black text-white text-lg mb-1">
+              🔒 {lockedCount} more claim{lockedCount !== 1 ? 's' : ''} locked
             </div>
             {lockedValue && (
-              <p className="text-sm text-gray-500 mb-4">{lockedValue}</p>
+              <p className="text-sm text-gray-400 mb-4">{lockedValue}</p>
             )}
+            <p className="text-sm text-gray-400 mb-5">Create a free account to unlock your full report, draft formal notices, and track deadlines.</p>
             <button
               onClick={goToSignup}
-              className="w-full bg-[#111] hover:bg-[#333] text-white font-bold py-3.5 rounded-full text-sm transition-colors"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-4 rounded-full text-base transition-colors"
             >
-              Create your free account to unlock all claims →
+              Unlock all claims — it's free →
             </button>
           </div>
         </>
