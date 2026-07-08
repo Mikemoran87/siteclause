@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveCorrespondence, getCorrespondence, deleteCorrespondence } from '../../lib/db'
 import type { Correspondence } from '../../lib/db'
+import { parseFileToText } from '../../lib/parseFile'
 
 interface Props {
   projectId: string
@@ -37,7 +38,7 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
     setError('')
     setSaving(true)
     try {
-      const text = await file.text()
+      const text = await parseFileToText(file)
       await saveCorrespondence(projectId, userId, text, file.name)
       await load()
     } catch (err: unknown) {
@@ -158,7 +159,7 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
           {saving ? 'Uploading…' : '↑ Upload File'}
           <input
             type="file"
-            accept=".txt,.pdf,.msg,.eml"
+            accept=".txt,.pdf,.msg,.eml,.xlsx,.xls,.csv"
             onChange={handleFileUpload}
             className="hidden"
             disabled={saving}

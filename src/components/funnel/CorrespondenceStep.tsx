@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { parseFileToText } from '../../lib/parseFile'
 
 interface Props {
   onContinue: (files: File[], text: string) => void
@@ -17,6 +18,8 @@ export default function CorrespondenceStep({ onContinue, onBack }: Props) {
   const addFile = (file: File) => {
     setFiles(prev => [...prev, file])
   }
+
+  const [parseError, setParseError] = useState('')
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -89,13 +92,13 @@ export default function CorrespondenceStep({ onContinue, onBack }: Props) {
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".txt,.pdf,.eml,.msg"
+              accept=".txt,.pdf,.eml,.msg,.xlsx,.xls,.csv"
               className="hidden"
               onChange={(e) => Array.from(e.target.files || []).forEach(addFile)}
             />
             <div className="text-2xl mb-1">📁</div>
             <div className="text-xs font-semibold text-gray-600">Upload files</div>
-            <div className="text-xs text-gray-400">.txt, .pdf, .eml</div>
+            <div className="text-xs text-gray-400">.txt, .pdf, .xlsx, .csv</div>
           </label>
 
           {/* Screenshot */}
@@ -172,9 +175,22 @@ export default function CorrespondenceStep({ onContinue, onBack }: Props) {
         </div>
 
         {/* CTA buttons */}
+        {parseError && <p className="text-xs text-red-500">{parseError}</p>}
+
         <div className="space-y-3">
           <button
-            onClick={() => onContinue(files, pasteText)}
+            onClick={async () => {
+              setParseError('')
+              try {
+                // Parse any Excel/CSV files to text before passing up
+                const parsedTexts = await Promise.all(files.map(parseFileToText))
+                const combined = [pasteText, ...parsedTexts].filter(Boolean).join('\n\n---\n\n')
+                onContinue([], combined)
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : 'Failed to read file'
+                setParseError(`Couldn't read a file: ${msg}`)
+              }
+            }}
             disabled={!hasContent}
             className="w-full bg-[#111] hover:bg-[#333] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-4 rounded-full text-base transition-colors min-h-[56px]"
           >
