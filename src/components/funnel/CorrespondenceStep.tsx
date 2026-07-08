@@ -162,8 +162,9 @@ export default function CorrespondenceStep({ onContinue, onBack }: Props) {
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
           <div className="text-xs font-bold text-green-800 uppercase tracking-wide mb-1">💬 How to export WhatsApp</div>
           <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-            <li>Open the site chat in WhatsApp</li>
-            <li>Tap three dots → <strong>More</strong> → <strong>Export Chat</strong></li>
+            <li>Open the specific conversation in the WhatsApp mobile app</li>
+            <li>Tap the <strong>contact or group name</strong> at the top</li>
+            <li>Scroll down and select <strong>Export Chat</strong></li>
             <li>Choose <strong>Without Media</strong></li>
             <li>Upload the .txt file above</li>
           </ol>

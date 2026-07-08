@@ -193,10 +193,11 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
       <div className="bg-green-50 border border-green-200 rounded-xl p-4">
         <div className="text-xs font-bold text-green-800 uppercase tracking-wide mb-1">💬 How to export your WhatsApp chat</div>
         <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-          <li>Open the WhatsApp chat with your main contractor or site team</li>
-          <li>Tap the three dots (⋮) → <strong>More</strong> → <strong>Export Chat</strong></li>
+          <li>Open the specific conversation in the WhatsApp mobile app</li>
+          <li>Tap the <strong>contact or group name</strong> at the top</li>
+          <li>Scroll down and select <strong>Export Chat</strong></li>
           <li>Choose <strong>Without Media</strong></li>
-          <li>Save the .txt file and upload it above using the WhatsApp button</li>
+          <li>Upload the .txt file above using the WhatsApp Export button</li>
         </ol>
       </div>
 
