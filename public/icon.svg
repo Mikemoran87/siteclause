@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#111111"/>
+  <text x="256" y="200" font-family="Arial Black, Arial" font-weight="900" font-size="160" fill="#F59E0B" text-anchor="middle">SC</text>
+  <text x="256" y="360" font-family="Arial, sans-serif" font-weight="700" font-size="72" fill="#ffffff" text-anchor="middle">SiteClause</text>
+</svg>
