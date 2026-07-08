@@ -195,7 +195,7 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
         <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
           <li>Open the specific conversation in the WhatsApp mobile app</li>
           <li>Tap the <strong>contact or group name</strong> at the top</li>
-          <li>Scroll down and select <strong>Export Chat</strong></li>
+          <li>Scroll down, select <strong>Export Chat</strong>, then tap <strong>Copy</strong></li>
           <li>Choose <strong>Without Media</strong></li>
           <li>Upload the .txt file above using the WhatsApp Export button</li>
         </ol>
