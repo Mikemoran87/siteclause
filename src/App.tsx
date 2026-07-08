@@ -7,15 +7,30 @@ import ProjectView from './pages/ProjectView'
 import Landing from './pages/Landing'
 import Upload from './pages/Upload'
 import Results from './pages/Results'
+import LeadFunnel from './pages/LeadFunnel'
+import LoginPage from './pages/LoginPage'
 import type { AnalysisResult } from './types'
 
 type AppPage = 'auth' | 'dashboard' | 'project'
 type DemoPage = 'landing' | 'upload' | 'results'
 
-// Check if user navigated to /demo
-const isDemo = () =>
-  typeof window !== 'undefined' &&
-  (window.location.pathname === '/demo' || window.location.pathname.startsWith('/demo/'))
+const getPath = () =>
+  typeof window !== 'undefined' ? window.location.pathname : '/'
+
+const isDemo = () => {
+  const p = getPath()
+  return p === '/demo' || p.startsWith('/demo/')
+}
+
+const isAnalyse = () => {
+  const p = getPath()
+  return p === '/analyse' || p.startsWith('/analyse/')
+}
+
+const isLogin = () => {
+  const p = getPath()
+  return p === '/login' || p.startsWith('/login/')
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -23,25 +38,27 @@ export default function App() {
   const [appPage, setAppPage] = useState<AppPage>('auth')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [demoMode, setDemoMode] = useState(isDemo())
+  const [analyseMode, setAnalyseMode] = useState(isAnalyse())
+  const [loginMode, setLoginMode] = useState(isLogin())
 
   // Demo sub-state
   const [demoPage, setDemoPage] = useState<DemoPage>('landing')
   const [demoResults, setDemoResults] = useState<AnalysisResult | null>(null)
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setSessionLoading(false)
       if (session) setAppPage('dashboard')
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
         setAppPage('dashboard')
         setDemoMode(false)
+        setAnalyseMode(false)
+        setLoginMode(false)
       } else {
         setAppPage('auth')
         setSelectedProjectId(null)
@@ -51,11 +68,15 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Handle /demo route changes
+  // Track route changes (back/forward)
   useEffect(() => {
-    const checkDemo = () => setDemoMode(isDemo())
-    window.addEventListener('popstate', checkDemo)
-    return () => window.removeEventListener('popstate', checkDemo)
+    const onPop = () => {
+      setDemoMode(isDemo())
+      setAnalyseMode(isAnalyse())
+      setLoginMode(isLogin())
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
   }, [])
 
   if (sessionLoading) {
@@ -66,7 +87,24 @@ export default function App() {
     )
   }
 
-  // Demo mode — always accessible regardless of auth state
+  // ── /analyse — always accessible, no auth required ──
+  if (analyseMode) {
+    return <LeadFunnel />
+  }
+
+  // ── /login — always accessible ──
+  if (loginMode) {
+    // If already logged in, redirect to dashboard
+    if (session) {
+      setAppPage('dashboard')
+      setLoginMode(false)
+      // Fall through to dashboard below
+    } else {
+      return <LoginPage />
+    }
+  }
+
+  // ── /demo — always accessible ──
   if (demoMode) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -87,12 +125,12 @@ export default function App() {
     )
   }
 
-  // Not authenticated
+  // ── Not authenticated ──
   if (!session) {
     return <AuthPage />
   }
 
-  // Authenticated — project view
+  // ── Project view ──
   if (appPage === 'project' && selectedProjectId) {
     return (
       <ProjectView
@@ -106,7 +144,7 @@ export default function App() {
     )
   }
 
-  // Authenticated — dashboard
+  // ── Dashboard ──
   return (
     <Dashboard
       userId={session.user.id}

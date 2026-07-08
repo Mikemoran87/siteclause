@@ -1,47 +1,4 @@
-import { useState } from 'react'
-import { supabase } from '../lib/supabase'
-
-type Mode = 'login' | 'signup' | 'forgot'
-
 export default function AuthPage() {
-  const [mode, setMode] = useState<Mode>('login')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
-
-  const clearState = () => { setError(''); setMessage('') }
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); clearState(); setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    setLoading(false)
-  }
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault(); clearState()
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
-    setLoading(true)
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error) { setError(error.message) } else { setMessage('Check your email to confirm your account.') }
-    setLoading(false)
-  }
-
-  const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault(); clearState(); setLoading(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
-    if (error) { setError(error.message) } else { setMessage('Password reset email sent. Check your inbox.') }
-    setLoading(false)
-  }
-
-  const scrollToLogin = () => {
-    document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
     <div className="min-h-screen bg-white font-sans">
 
@@ -51,12 +8,12 @@ export default function AuthPage() {
           <div className="text-xl md:text-2xl font-black tracking-tight select-none">
             <span className="text-[#F59E0B]">Site</span><span className="text-gray-900">Clause</span>
           </div>
-          <button
-            onClick={scrollToLogin}
+          <a
+            href="/login"
             className="bg-[#111] hover:bg-[#333] text-white text-sm font-semibold px-4 md:px-5 py-2 md:py-2.5 rounded-full transition-colors min-h-[44px] flex items-center"
           >
             Log in →
-          </button>
+          </a>
         </div>
       </nav>
 
@@ -75,16 +32,16 @@ export default function AuthPage() {
             tracks every deadline, and drafts your formal notices.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
-            <button
-              onClick={scrollToLogin}
-              className="w-full sm:w-auto bg-[#111] hover:bg-[#333] text-white font-semibold px-8 py-3.5 rounded-full text-base transition-colors min-h-[44px]"
+            <a
+              href="/analyse"
+              className="w-full sm:w-auto bg-[#111] hover:bg-[#333] text-white font-semibold px-8 py-3.5 rounded-full text-base transition-colors min-h-[44px] flex items-center justify-center"
             >
-              Try the Demo →
-            </button>
+              See What You're Owed →
+            </a>
           </div>
-          <p className="text-sm text-gray-400">No credit card needed.</p>
+          <p className="text-sm text-gray-400">No credit card needed. No account required.</p>
 
-          {/* Product Mockup — hidden on small mobile to save space */}
+          {/* Product Mockup */}
           <div className="mt-10 md:mt-16 max-w-3xl mx-auto hidden sm:block">
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
               {/* Browser chrome */}
@@ -243,131 +200,22 @@ export default function AuthPage() {
         </div>
       </section>
 
-      {/* ── Login Section ── */}
-      <section id="login-section" className="bg-[#F5F5F5] py-12 md:py-24 px-4 md:px-6">
-        <div className="max-w-md mx-auto">
-          {/* Card */}
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            {/* Card header */}
-            <div className="px-6 md:px-8 pt-6 md:pt-8 pb-4">
-              <div className="text-xl font-black mb-1">
-                <span className="text-[#F59E0B]">Site</span><span className="text-gray-900">Clause</span>
-              </div>
-              <p className="text-sm text-gray-400">Sign in or create your account to get started</p>
-            </div>
-
-            {/* Tabs */}
-            {mode !== 'forgot' && (
-              <div className="px-6 md:px-8 pb-2">
-                <div className="flex bg-gray-100 rounded-full p-1 gap-1">
-                  {(['login', 'signup'] as Mode[]).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => { setMode(m); clearState() }}
-                      className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-colors min-h-[44px] ${
-                        mode === m
-                          ? 'bg-[#111] text-white shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      {m === 'login' ? 'Log In' : 'Sign Up'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="px-6 md:px-8 pb-8 pt-4">
-              {mode === 'forgot' ? (
-                <>
-                  <h3 className="font-black text-gray-900 text-base mb-1">Reset your password</h3>
-                  <p className="text-gray-400 text-sm mb-5">Enter your email and we'll send a reset link.</p>
-                  <form onSubmit={handleForgot} className="space-y-3">
-                    <input
-                      type="email" placeholder="Email address" value={email}
-                      onChange={e => setEmail(e.target.value)} required
-                      className="w-full border border-[#E5E5E5] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    />
-                    {error && <p className="text-red-600 text-sm">{error}</p>}
-                    {message && <p className="text-green-600 text-sm">{message}</p>}
-                    <button
-                      type="submit" disabled={loading}
-                      className="w-full bg-[#111] hover:bg-[#333] text-white font-semibold py-3 rounded-full transition-colors text-sm disabled:opacity-60 min-h-[44px]"
-                    >
-                      {loading ? 'Sending...' : 'Send Reset Link'}
-                    </button>
-                    <button
-                      type="button" onClick={() => { setMode('login'); clearState() }}
-                      className="w-full text-center text-sm text-gray-400 hover:text-gray-600 min-h-[44px] flex items-center justify-center"
-                    >
-                      ← Back to Log In
-                    </button>
-                  </form>
-                </>
-              ) : mode === 'login' ? (
-                <>
-                  <h3 className="font-black text-gray-900 text-base mb-5">Welcome back</h3>
-                  <form onSubmit={handleLogin} className="space-y-3">
-                    <input
-                      type="email" placeholder="Email address" value={email}
-                      onChange={e => setEmail(e.target.value)} required
-                      className="w-full border border-[#E5E5E5] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    />
-                    <input
-                      type="password" placeholder="Password" value={password}
-                      onChange={e => setPassword(e.target.value)} required
-                      className="w-full border border-[#E5E5E5] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    />
-                    {error && <p className="text-red-600 text-sm">{error}</p>}
-                    {message && <p className="text-green-600 text-sm">{message}</p>}
-                    <button
-                      type="submit" disabled={loading}
-                      className="w-full bg-[#111] hover:bg-[#333] text-white font-semibold py-3 rounded-full transition-colors text-sm disabled:opacity-60 min-h-[44px]"
-                    >
-                      {loading ? 'Logging in...' : 'Log In →'}
-                    </button>
-                    <button
-                      type="button" onClick={() => { setMode('forgot'); clearState() }}
-                      className="w-full text-center text-sm text-gray-400 hover:text-gray-600 min-h-[44px] flex items-center justify-center"
-                    >
-                      Forgot password?
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <h3 className="font-black text-gray-900 text-base mb-1">Create your account</h3>
-                  <p className="text-gray-400 text-sm mb-5">Free to start. No credit card required.</p>
-                  <form onSubmit={handleSignup} className="space-y-3">
-                    <input
-                      type="email" placeholder="Email address" value={email}
-                      onChange={e => setEmail(e.target.value)} required
-                      className="w-full border border-[#E5E5E5] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    />
-                    <input
-                      type="password" placeholder="Password (min. 6 characters)" value={password}
-                      onChange={e => setPassword(e.target.value)} required
-                      className="w-full border border-[#E5E5E5] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    />
-                    {error && <p className="text-red-600 text-sm">{error}</p>}
-                    {message && <p className="text-green-600 text-sm">{message}</p>}
-                    <button
-                      type="submit" disabled={loading}
-                      className="w-full bg-[#111] hover:bg-[#333] text-white font-semibold py-3 rounded-full transition-colors text-sm disabled:opacity-60 min-h-[44px]"
-                    >
-                      {loading ? 'Creating account...' : 'Create Account →'}
-                    </button>
-                  </form>
-                </>
-              )}
-
-              <div className="mt-6 pt-5 border-t border-gray-100 text-center">
-                <a href="/demo" className="text-sm text-gray-500 hover:text-gray-700">
-                  Try the demo without an account →
-                </a>
-              </div>
-            </div>
-          </div>
+      {/* ── Final CTA ── */}
+      <section className="bg-white py-16 md:py-24 px-4 md:px-6 text-center">
+        <div className="max-w-xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 leading-tight">
+            Ready to see what you're owed?
+          </h2>
+          <p className="text-gray-500 mb-8 text-base leading-relaxed">
+            Upload your contract. Find your claims. No signup needed to get started.
+          </p>
+          <a
+            href="/analyse"
+            className="inline-block bg-[#111] hover:bg-[#333] text-white font-semibold px-10 py-4 rounded-full text-base transition-colors"
+          >
+            See What You're Owed →
+          </a>
+          <p className="text-sm text-gray-400 mt-4">Free. No credit card. Takes 2 minutes.</p>
         </div>
       </section>
 
@@ -377,7 +225,10 @@ export default function AuthPage() {
           <div className="text-xl font-black">
             <span className="text-[#F59E0B]">Site</span><span className="text-gray-900">Clause</span>
           </div>
-          <div className="text-sm text-gray-400">hello@siteclause.io</div>
+          <div className="flex items-center gap-6 text-sm text-gray-400">
+            <a href="/login" className="hover:text-gray-600">Log in</a>
+            <span>hello@siteclause.io</span>
+          </div>
         </div>
       </footer>
     </div>
