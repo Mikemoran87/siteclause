@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 interface Option {
   label: string
   value: string
@@ -9,8 +11,8 @@ interface Props {
   selected: string | null
   onSelect: (value: string) => void
   onBack: () => void
-  stepIndex: number   // 0-based among questions (0,1,2)
-  totalSteps: number  // total question count
+  stepIndex: number
+  totalSteps: number
 }
 
 export default function QuestionStep({
@@ -22,10 +24,25 @@ export default function QuestionStep({
   stepIndex,
   totalSteps,
 }: Props) {
-  // Progress: questions are steps 1–3 out of 1–4 overall (upload already done)
-  // We show progress within the questions phase: (stepIndex+1)/totalSteps
-  // But visually represent as 25%→50%→75% for 3 questions
+  const [otherText, setOtherText] = useState('')
+  const [showOther, setShowOther] = useState(false)
+
   const progressPct = Math.round(((stepIndex + 1) / (totalSteps + 1)) * 100)
+
+  const handleOptionClick = (opt: Option) => {
+    if (opt.value === 'other') {
+      setShowOther(true)
+    } else {
+      setShowOther(false)
+      onSelect(opt.value)
+    }
+  }
+
+  const handleOtherSubmit = () => {
+    if (otherText.trim()) {
+      onSelect(`other:${otherText.trim()}`)
+    }
+  }
 
   return (
     <div className="max-w-xl mx-auto w-full px-4 py-12">
@@ -49,9 +66,9 @@ export default function QuestionStep({
         {options.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => onSelect(opt.value)}
+            onClick={() => handleOptionClick(opt)}
             className={`w-full text-left px-5 py-4 rounded-xl border-2 text-sm font-semibold transition-all ${
-              selected === opt.value
+              (selected === opt.value || (opt.value === 'other' && showOther))
                 ? 'border-gray-900 bg-gray-900 text-white'
                 : 'border-gray-200 bg-[#F5F5F5] text-gray-800 hover:border-gray-400 hover:bg-gray-100'
             }`}
@@ -60,6 +77,28 @@ export default function QuestionStep({
           </button>
         ))}
       </div>
+
+      {/* Other text input */}
+      {showOther && (
+        <div className="mt-4 space-y-3">
+          <input
+            type="text"
+            autoFocus
+            value={otherText}
+            onChange={e => setOtherText(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleOtherSubmit()}
+            placeholder="Type your type of work…"
+            className="w-full border-2 border-gray-900 rounded-xl px-5 py-4 text-base font-semibold focus:outline-none"
+          />
+          <button
+            onClick={handleOtherSubmit}
+            disabled={!otherText.trim()}
+            className="w-full bg-[#111] hover:bg-[#333] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-4 rounded-full text-sm transition-colors min-h-[56px]"
+          >
+            Continue →
+          </button>
+        </div>
+      )}
 
       <button
         onClick={onBack}
