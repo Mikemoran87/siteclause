@@ -167,7 +167,7 @@ export default function CorrespondenceStep({ onContinue, onBack }: Props) {
             <li>Scroll down, select <strong>Export Chat</strong></li>
             <li>Choose <strong>Without Media</strong></li>
             <li>Save to <strong>Files</strong></li>
-            <li>Upload the .txt file above</li>
+            <li>Click the <strong>WhatsApp Export</strong> button above to upload it</li>
           </ol>
         </div>
 
