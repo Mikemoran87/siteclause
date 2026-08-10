@@ -165,7 +165,7 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
 
   const handleStartAdjust = (v: Variation) => {
     setEditingId(v.id)
-    setEditTitle(v.title)
+    setEditTitle(v.title ?? '')
     setEditValue((v.value ?? '').replace(/[^0-9.]/g, ''))
   }
 
