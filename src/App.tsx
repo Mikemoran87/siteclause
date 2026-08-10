@@ -68,25 +68,30 @@ export default function App() {
       setSession(session)
       setSessionLoading(false)
       if (session) {
-        // Restore saved page if available
+        // Restore saved page — don't override if already set from sessionStorage init
         const savedPage = sessionStorage.getItem('sc_page') as AppPage | null
         const savedProject = sessionStorage.getItem('sc_project_id')
         if (savedPage === 'project' && savedProject) {
           setAppPage('project')
           setSelectedProjectId(savedProject)
-        } else {
+        } else if (!savedPage || savedPage === 'auth') {
           setAppPage('dashboard')
         }
+        // If savedPage is 'dashboard' or 'project', leave state as-is (already initialised from sessionStorage)
       }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       if (session) {
-        setAppPage('dashboard')
-        setDemoMode(false)
-        setAnalyseMode(false)
-        setLoginMode(false)
+        // Only reset to dashboard on actual sign-in, not on token refresh or tab focus
+        if (event === 'SIGNED_IN') {
+          setAppPage('dashboard')
+          setDemoMode(false)
+          setAnalyseMode(false)
+          setLoginMode(false)
+        }
+        // For TOKEN_REFRESHED and other events, keep current page
       } else {
         setAppPage('auth')
         setSelectedProjectId(null)
