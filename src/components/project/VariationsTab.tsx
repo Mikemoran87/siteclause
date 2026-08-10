@@ -221,7 +221,7 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
   const handleStartAdjust = (v: Variation) => {
     setEditingId(v.id)
     setEditTitle(v.title ?? '')
-    setEditValue((v.value ?? '').replace(/[^0-9.]/g, ''))
+    setEditValue((v.value ?? '').replace(/,/g, '').replace(/[^0-9.]/g, '').match(/\d+(\.\d+)?/)?.[0] ?? '')
   }
 
   const handleSaveAdjust = async (id: string) => {
@@ -233,10 +233,15 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
 
+  const parseValue = (val: string): number => {
+    // Extract first number with optional comma separators: e.g. "Est. €10,000" → 10000
+    const match = val.replace(/,/g, '').match(/\d+(\.\d+)?/)
+    return match ? parseFloat(match[0]) : 0
+  }
   const totalValue = variations
     .filter(v => v.value)
-    .map(v => parseFloat((v.value ?? '').replace(/[^0-9.]/g, '')))
-    .filter(n => !isNaN(n))
+    .map(v => parseValue(v.value ?? ''))
+    .filter(n => n > 0)
     .reduce((a, b) => a + b, 0)
 
   return (
