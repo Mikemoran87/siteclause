@@ -30,8 +30,10 @@ export interface Contract {
   project_id: string
   filename?: string
   content?: string
-  file_data?: string  // base64 data URL of original file
-  file_type?: string  // MIME type e.g. 'application/pdf'
+  file_data?: string
+  file_type?: string
+  label?: string
+  doc_type?: string
   uploaded_at: string
 }
 
@@ -134,13 +136,19 @@ export async function saveContract(
   userId: string,
   filename: string,
   content: string,
-  fileData?: string,  // base64 data URL
-  fileType?: string
+  fileData?: string,
+  fileType?: string,
+  label?: string,
+  docType?: string
 ): Promise<Contract> {
-  // Delete existing contract for this project first
-  await supabase.from('contracts').delete().eq('project_id', projectId)
-
-  const row: Record<string, unknown> = { project_id: projectId, user_id: userId, filename, content }
+  const row: Record<string, unknown> = {
+    project_id: projectId,
+    user_id: userId,
+    filename,
+    content,
+    label: label ?? filename,
+    doc_type: docType ?? 'Main Contract',
+  }
   if (fileData) row.file_data = fileData
   if (fileType) row.file_type = fileType
 
@@ -154,6 +162,7 @@ export async function saveContract(
 }
 
 export async function getContract(projectId: string): Promise<Contract | null> {
+  // Returns the most recently uploaded contract (for backwards compat)
   const { data, error } = await supabase
     .from('contracts')
     .select('*')
@@ -165,8 +174,22 @@ export async function getContract(projectId: string): Promise<Contract | null> {
   return data
 }
 
+export async function getContracts(projectId: string): Promise<Contract[]> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('uploaded_at', { ascending: true })
+  if (error) return []
+  return data ?? []
+}
+
 export async function deleteContract(projectId: string): Promise<void> {
   await supabase.from('contracts').delete().eq('project_id', projectId)
+}
+
+export async function deleteContractById(contractId: string): Promise<void> {
+  await supabase.from('contracts').delete().eq('id', contractId)
 }
 
 // ── Correspondence ─────────────────────────────────────────────────────────────

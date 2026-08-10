@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, getContract, getCorrespondence, getRateCard, getProject } from '../../lib/db'
+import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, getContracts, getCorrespondence, getRateCard, getProject } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -69,8 +69,12 @@ export default function VariationsTab({ projectId, userId }: Props) {
     setAnalysing(true)
     setAnalyseMsg('')
     try {
-      const contract = await getContract(projectId)
-      if (!contract?.content) throw new Error('No contract uploaded yet — please upload a contract first')
+      const allContracts = await getContracts(projectId)
+      if (allContracts.length === 0) throw new Error('No contract uploaded yet — please upload a contract first')
+      // Combine all contract documents with labels
+      const contractText = allContracts
+        .map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`)
+        .join('\n\n')
       const corrItems = await getCorrespondence(projectId)
       const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
 
@@ -84,7 +88,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
       const response = await fetch('/api/analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractText: contract.content + rateContext, correspondenceText }),
+        body: JSON.stringify({ contractText: contractText + rateContext, correspondenceText }),
       })
       if (!response.ok) throw new Error('Analysis failed')
       const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }> }
@@ -120,8 +124,11 @@ export default function VariationsTab({ projectId, userId }: Props) {
       const { parseFileToText } = await import('../../lib/parseFile')
       const programmeText = await parseFileToText(file)
 
-      // Get contract for context
-      const contract = await getContract(projectId)
+      // Get all contract documents for context
+      const allDocs = await getContracts(projectId)
+      const combinedContractText = allDocs
+        .map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`)
+        .join('\n\n')
       const rates = await getRateCard(projectId)
       const rateContext = rates.length > 0
         ? `\n\nPROJECT RATE CARD:\n${rates.map(r => `- ${r.description}: €${r.rate} per ${r.unit}`).join('\n')}`
@@ -132,7 +139,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           programmeText,
-          contractText: contract?.content ?? '',
+          contractText: combinedContractText,
           rateContext,
         }),
       })

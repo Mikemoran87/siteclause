@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import { getRateCard, saveRateCard, getContract } from '../../lib/db'
+import { getRateCard, saveRateCard, getContracts } from '../../lib/db'
 import type { Rate } from '../../lib/db'
 
 interface Props {
@@ -94,8 +94,9 @@ export default function RateCardTab({ projectId, userId }: Props) {
     setError('')
     setSuccess('')
     try {
-      const contract = await getContract(projectId)
-      if (!contract?.content) throw new Error('No contract uploaded yet — upload a contract first')
+      const allDocs = await getContracts(projectId)
+      if (allDocs.length === 0) throw new Error('No contract uploaded yet — upload a contract first')
+      const contract = { content: allDocs.map(c => `=== ${c.doc_type}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`).join('\n\n') }
 
       const response = await fetch('/api/chat', {
         method: 'POST',

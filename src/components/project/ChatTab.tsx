@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getContract, saveChatMessage, getChatMessages, getRateCard } from '../../lib/db'
+import { getContracts, saveChatMessage, getChatMessages, getRateCard } from '../../lib/db'
 import type { ChatMessage, Rate } from '../../lib/db'
 
 interface Props {
@@ -35,12 +35,13 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
 
   const init = async () => {
     setInitialLoading(true)
-    const [contract, history, rates] = await Promise.all([
-      getContract(projectId),
+    const [allDocs, history, rates] = await Promise.all([
+      getContracts(projectId),
       getChatMessages(projectId),
       getRateCard(projectId),
     ])
-    setContractText(contract?.content ?? '')
+    const combined = allDocs.map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`).join('\n\n')
+    setContractText(combined)
     setMessages(history)
     setRateCard(rates)
     setInitialLoading(false)
