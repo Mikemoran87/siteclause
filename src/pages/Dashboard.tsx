@@ -99,10 +99,10 @@ export default function Dashboard({ userId, onSelectProject }: Props) {
 
       {/* ── Nav ── */}
       <nav className="bg-[#111] px-4 md:px-6 py-3 md:py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="text-lg md:text-xl font-black tracking-tight select-none">
+        <a href="/" className="text-lg md:text-xl font-black tracking-tight select-none">
           <span className="text-[#F59E0B]">Site</span>
           <span className="text-white">Clause</span>
-        </div>
+        </a>
         <div className="flex items-center gap-2 md:gap-4">
           {userEmail && (
             <span className="text-gray-400 text-xs md:text-sm hidden sm:block truncate max-w-[180px]">{userEmail}</span>
