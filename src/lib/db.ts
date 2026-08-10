@@ -241,6 +241,10 @@ export async function updateVariationStatus(variationId: string, status: string)
   if (error) throw error
 }
 
+export async function clearVariations(projectId: string): Promise<void> {
+  await supabase.from('variations').delete().eq('project_id', projectId)
+}
+
 export async function deleteVariation(variationId: string): Promise<void> {
   const { error } = await supabase.from('variations').delete().eq('id', variationId)
   if (error) throw error

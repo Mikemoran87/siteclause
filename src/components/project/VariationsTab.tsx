@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariationStatus, deleteVariation, getContract, getCorrespondence, getRateCard } from '../../lib/db'
+import { getVariations, saveVariation, updateVariationStatus, deleteVariation, clearVariations, getContract, getCorrespondence, getRateCard } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -80,6 +80,8 @@ export default function VariationsTab({ projectId, userId }: Props) {
       if (!response.ok) throw new Error('Analysis failed')
       const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }> }
       const claims = result.claims ?? []
+      // Clear existing AI-found variations before saving fresh results
+      await clearVariations(projectId)
       for (const claim of claims) {
         await saveVariation(projectId, userId, {
           title: claim.title,
