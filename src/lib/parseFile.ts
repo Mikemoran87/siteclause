@@ -1,11 +1,17 @@
 import * as XLSX from 'xlsx'
+import mammoth from 'mammoth'
 
 /**
  * Parse any supported file type into plain text for AI analysis.
- * Supports: .txt, .pdf (text-based), .csv, .xlsx, .xls
+ * Supports: .txt, .pdf (text-based), .csv, .xlsx, .xls, .docx
  */
 export async function parseFileToText(file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+
+  // Word documents
+  if (['docx', 'doc'].includes(ext)) {
+    return parseWordDoc(file)
+  }
 
   // Excel / CSV
   if (['xlsx', 'xls', 'csv'].includes(ext)) {
@@ -14,6 +20,12 @@ export async function parseFileToText(file: File): Promise<string> {
 
   // Plain text / PDF / anything else — read as text
   return file.text()
+}
+
+async function parseWordDoc(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const result = await mammoth.extractRawText({ arrayBuffer: buffer })
+  return `[Word Document: ${file.name}]\n\n${result.value}`
 }
 
 async function parseSpreadsheet(file: File): Promise<string> {

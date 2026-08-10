@@ -92,7 +92,7 @@ export default function CorrespondenceStep({ onContinue, onBack }: Props) {
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".txt,.pdf,.eml,.msg,.xlsx,.xls,.csv"
+              accept=".txt,.pdf,.doc,.docx,.eml,.msg,.xlsx,.xls,.csv"
               className="hidden"
               onChange={(e) => Array.from(e.target.files || []).forEach(addFile)}
             />

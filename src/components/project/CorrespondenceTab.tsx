@@ -159,7 +159,7 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
           {saving ? 'Uploading…' : '↑ Upload File'}
           <input
             type="file"
-            accept=".txt,.pdf,.msg,.eml,.xlsx,.xls,.csv"
+            accept=".txt,.pdf,.doc,.docx,.msg,.eml,.xlsx,.xls,.csv"
             onChange={handleFileUpload}
             className="hidden"
             disabled={saving}
