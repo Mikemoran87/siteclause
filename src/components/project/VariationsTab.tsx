@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariationStatus, deleteVariation } from '../../lib/db'
+import { getVariations, saveVariation, updateVariationStatus, deleteVariation, getContract, getCorrespondence } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -40,6 +40,8 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showCalc, setShowCalc] = useState<string | null>(null)
   const [calc, setCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
+  const [analysing, setAnalysing] = useState(false)
+  const [analyseMsg, setAnalyseMsg] = useState('')
   const [form, setForm] = useState<VariationInput>({
     title: '',
     description: '',
@@ -53,6 +55,41 @@ export default function VariationsTab({ projectId, userId }: Props) {
   useEffect(() => {
     load()
   }, [projectId])
+
+  const handleAnalyse = async () => {
+    setAnalysing(true)
+    setAnalyseMsg('')
+    try {
+      const contract = await getContract(projectId)
+      if (!contract?.content) throw new Error('No contract uploaded yet — please upload a contract first')
+      const corrItems = await getCorrespondence(projectId)
+      const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
+      const response = await fetch('/api/analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contractText: contract.content, correspondenceText }),
+      })
+      if (!response.ok) throw new Error('Analysis failed')
+      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }> }
+      const claims = result.claims ?? []
+      for (const claim of claims) {
+        await saveVariation(projectId, userId, {
+          title: claim.title,
+          description: claim.description,
+          value: claim.estimatedValue,
+          status: 'Draft',
+          deadline: claim.deadlineStatus,
+          notice_drafted: claim.draftNotice ?? '',
+        })
+      }
+      await load()
+      setAnalyseMsg(`✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''}`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Analysis failed'
+      setAnalyseMsg(`❌ ${msg}`)
+    }
+    setAnalysing(false)
+  }
 
   const load = async () => {
     setLoading(true)
@@ -104,11 +141,38 @@ export default function VariationsTab({ projectId, userId }: Props) {
         </div>
       )}
 
+      {/* Find Variations Button */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        {analyseMsg && (
+          <p className="text-sm font-semibold mb-3 text-gray-700">{analyseMsg}</p>
+        )}
+        <button
+          onClick={handleAnalyse}
+          disabled={analysing}
+          className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] flex items-center justify-center gap-2"
+        >
+          {analysing ? (
+            <>
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Analysing contract and correspondence…
+            </>
+          ) : (
+            '🔍 Find Variation Claims'
+          )}
+        </button>
+        <p className="text-xs text-amber-700 mt-2 text-center">
+          AI reads your contract + correspondence and finds every claim you're entitled to
+        </p>
+      </div>
+
       <button
         onClick={() => setShowAdd(true)}
         className="w-full md:w-auto md:ml-auto md:flex bg-[#1B4332] hover:bg-[#2D6A4F] text-white font-bold px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px] flex items-center justify-center"
       >
-        + Add Variation
+        + Add Variation Manually
       </button>
 
       {variations.length === 0 ? (
