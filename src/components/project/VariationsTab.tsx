@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, getContract, getCorrespondence, getRateCard } from '../../lib/db'
+import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, getContract, getCorrespondence, getRateCard, getProject } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -43,6 +43,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [analysing, setAnalysing] = useState(false)
   const [analyseMsg, setAnalyseMsg] = useState('')
   const [projectRates, setProjectRates] = useState<import('../../lib/db').Rate[]>([])
+  const [projectName, setProjectName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [editTitle, setEditTitle] = useState('')
@@ -59,6 +60,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
   useEffect(() => {
     load()
     getRateCard(projectId).then(setProjectRates)
+    getProject(projectId).then(p => { if (p) setProjectName(p.name) })
   }, [projectId])
 
   const handleAnalyse = async () => {
@@ -415,12 +417,24 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 font-serif text-sm text-gray-700 whitespace-pre-wrap">
                         {v.notice_drafted}
                       </div>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(v.notice_drafted ?? '')}
-                        className="mt-2 text-xs text-amber-700 border border-amber-300 rounded-lg px-3 py-2 min-h-[44px] flex items-center"
-                      >
-                        📋 Copy to clipboard
-                      </button>
+                      <div className="mt-2 flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(v.notice_drafted ?? '')}
+                          className="text-xs text-amber-700 border border-amber-300 rounded-lg px-3 py-2 min-h-[44px] flex items-center"
+                        >
+                          📋 Copy
+                        </button>
+                        <button
+                          onClick={() => {
+                            const subject = encodeURIComponent(`Variation Notice — ${v.title}${projectName ? ` — ${projectName}` : ''}`)
+                            const body = encodeURIComponent(v.notice_drafted ?? '')
+                            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
+                          }}
+                          className="text-xs text-white bg-[#1B4332] hover:bg-[#2D6A4F] rounded-lg px-3 py-2 min-h-[44px] flex items-center gap-1"
+                        >
+                          ✉️ Send Email
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
