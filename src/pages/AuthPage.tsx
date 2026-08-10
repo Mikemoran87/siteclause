@@ -5,9 +5,9 @@ export default function AuthPage() {
       {/* ── Nav ── */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 md:px-6 py-3 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="text-xl md:text-2xl font-black tracking-tight select-none">
+          <a href="/" className="text-xl md:text-2xl font-black tracking-tight cursor-pointer">
             <span className="text-[#F59E0B]">Site</span><span className="text-gray-900">Clause</span>
-          </div>
+          </a>
           <a
             href="/login"
             className="bg-[#111] hover:bg-[#333] text-white text-sm font-semibold px-4 md:px-5 py-2 md:py-2.5 rounded-full transition-colors min-h-[44px] flex items-center"

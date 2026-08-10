@@ -51,7 +51,7 @@ export default function LoginPage() {
       {/* Nav */}
       <nav className="bg-white border-b border-gray-100 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <a href="/" className="text-xl font-black tracking-tight select-none">
+          <a href="/" className="text-xl font-black tracking-tight cursor-pointer">
             <span className="text-amber-500">Site</span>
             <span className="text-gray-900">Clause</span>
           </a>

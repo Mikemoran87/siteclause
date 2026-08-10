@@ -78,7 +78,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
       {/* ── Top Nav ── */}
       <nav className="bg-[#111] px-4 md:px-6 py-3 md:py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <a href="/" className="text-base md:text-lg font-black tracking-tight select-none">
+          <a href="/" className="text-base md:text-lg font-black tracking-tight cursor-pointer">
             <span className="text-[#F59E0B]">Site</span>
             <span className="text-white">Clause</span>
           </a>

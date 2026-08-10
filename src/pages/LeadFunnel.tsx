@@ -170,7 +170,7 @@ export default function LeadFunnel() {
 
       {/* Nav */}
       <nav className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <a href="/" className="text-xl font-black tracking-tight select-none">
+        <a href="/" className="text-xl font-black tracking-tight cursor-pointer">
           <span className="text-amber-500">Site</span>
           <span className="text-gray-900">Clause</span>
         </a>
