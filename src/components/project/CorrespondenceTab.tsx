@@ -19,8 +19,10 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
   const [source, setSource] = useState('')
   const [error, setError] = useState('')
   const [ocrLoading, setOcrLoading] = useState(false)
+  const [voiceLoading, setVoiceLoading] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const voiceInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     load()
@@ -109,6 +111,40 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
     }
 
     setOcrLoading(false)
+    e.target.value = ''
+  }
+
+  const handleVoiceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError('')
+    setVoiceLoading(true)
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audioBase64: base64, mimeType: file.type, filename: file.name }),
+      })
+      const data = await response.json() as { text?: string; error?: string }
+      if (!response.ok || data.error) throw new Error(data.error ?? 'Transcription failed')
+      if (!data.text?.trim()) throw new Error('No speech detected in audio file')
+
+      const label = `Voice note: ${file.name}`
+      const transcribed = `[Voice Note Transcription — ${file.name}]\n\n${data.text}`
+      await saveCorrespondence(projectId, userId, transcribed, label)
+      await load()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Transcription failed'
+      setError(`Voice note failed: ${message}`)
+    }
+    setVoiceLoading(false)
     e.target.value = ''
   }
 
@@ -206,6 +242,18 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
             onChange={handleFileUpload}
             className="hidden"
             disabled={saving}
+          />
+        </label>
+
+        <label className={`flex-1 sm:flex-none border-2 border-purple-500 text-purple-700 font-bold px-4 py-3 rounded-xl text-sm hover:bg-purple-50 transition-colors cursor-pointer min-h-[44px] flex items-center justify-center gap-1 ${voiceLoading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+          {voiceLoading ? '🎙 Transcribing…' : '🎙 Voice Note'}
+          <input
+            ref={voiceInputRef}
+            type="file"
+            accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac,.opus,.weba,.webm"
+            onChange={handleVoiceUpload}
+            className="hidden"
+            disabled={voiceLoading}
           />
         </label>
       </div>
