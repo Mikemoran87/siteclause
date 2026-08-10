@@ -42,6 +42,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [calc, setCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
   const [analysing, setAnalysing] = useState(false)
   const [analyseMsg, setAnalyseMsg] = useState('')
+  const [projectRates, setProjectRates] = useState<import('../../lib/db').Rate[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [editTitle, setEditTitle] = useState('')
@@ -57,6 +58,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
 
   useEffect(() => {
     load()
+    getRateCard(projectId).then(setProjectRates)
   }, [projectId])
 
   const handleAnalyse = async () => {
@@ -304,25 +306,30 @@ export default function VariationsTab({ projectId, userId }: Props) {
                         onClick={() => {
                           if (showCalc === v.id) { setShowCalc(null) } else {
                             setShowCalc(v.id)
-                            // Try to pre-fill from variation value and description
-                            const totalVal = parseFloat((v.value ?? '').replace(/[^0-9.]/g, '')) || 0
-                            // Look for labour hours in description (e.g. "144 man hours", "144 hrs")
-                            const hoursMatch = (v.description + ' ' + (v.notice_drafted ?? '')).match(/(\d+)\s*(?:man\s*)?(?:hours?|hrs?)/i)
+                            const text = (v.description ?? '') + ' ' + (v.notice_drafted ?? '')
+
+                            // Labour hours from description
+                            const hoursMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:man[\s-]?)?(?:hours?|hrs?)/i)
                             const hours = hoursMatch ? hoursMatch[1] : ''
-                            // Look for rate (e.g. "€57/hr", "57 per hour")
-                            const rateMatch = (v.description + ' ' + (v.notice_drafted ?? '')).match(/€(\d+)\/hr|(\d+)\s*per\s*hour/i)
-                            const rate = rateMatch ? (rateMatch[1] || rateMatch[2]) : ''
-                            // Estimate materials as remainder after labour
-                            const labourTotal = (parseFloat(hours) || 0) * (parseFloat(rate) || 0)
-                            const mats = labourTotal > 0 && totalVal > labourTotal
-                              ? String(Math.round(totalVal - labourTotal))
-                              : totalVal > 0 ? String(Math.round(totalVal * 0.6)) : ''
-                            setCalc({
-                              labourHours: hours,
-                              labourRate: rate,
-                              materials: mats,
-                              overhead: '15'
-                            })
+
+                            // Labour rate: prefer rate card labourer rate, fallback to parsing description
+                            const rateFromText = text.match(/€(\d+(?:\.\d+)?)\/hr|(\d+(?:\.\d+)?)\s*per\s*hour/i)
+                            const labourRateFromCard = projectRates.find(r =>
+                              r.category === 'Labour' && /labourer|operative|general/i.test(r.description)
+                            )
+                            const overtimeMatch = text.match(/overtime/i)
+                            const rate = rateFromText
+                              ? (rateFromText[1] || rateFromText[2])
+                              : overtimeMatch
+                                ? ''  // overtime rate must be explicit
+                                : labourRateFromCard ? String(labourRateFromCard.rate) : ''
+
+                            // Overhead from rate card if available
+                            const ohRate = projectRates.find(r => /overhead/i.test(r.description))
+                            const oh = ohRate ? String(ohRate.rate) : '15'
+
+                            // No materials estimate — leave blank for Pat to fill
+                            setCalc({ labourHours: hours, labourRate: rate, materials: '', overhead: oh })
                           }
                         }}
                         className="text-xs text-[#1B4332] font-semibold min-h-[44px] flex items-center"
