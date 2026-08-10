@@ -116,7 +116,36 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    await saveVariation(projectId, userId, form)
+
+    // Auto-generate a formal notice if one hasn't been written
+    let notice = form.notice_drafted
+    if (!notice && form.title) {
+      try {
+        const today = new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{
+              role: 'user',
+              content: `Draft a formal variation notice for a construction subcontract. Be concise and professional.
+
+Variation title: ${form.title}
+Description: ${form.description || 'See title'}
+Value: ${form.value || 'To be agreed'}
+Date: ${today}
+
+Write a short formal notice (3-4 sentences) that the subcontractor sends to the main contractor asserting their entitlement to this variation under the subcontract. Reference the instruction received and the contractual basis. Do not include placeholders — use the information provided.`
+            }],
+            contractText: ''
+          }),
+        })
+        const data = await resp.json() as { reply?: string }
+        if (data.reply) notice = data.reply
+      } catch { /* leave blank if fails */ }
+    }
+
+    await saveVariation(projectId, userId, { ...form, notice_drafted: notice })
     setForm({ title: '', description: '', value: '', status: 'Draft', deadline: '', notice_drafted: '' })
     setShowAdd(false)
     await load()
