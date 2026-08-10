@@ -1,12 +1,6 @@
 import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
-import * as pdfjsLib from 'pdfjs-dist'
 
-// Use bundled worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString()
 
 /**
  * Parse any supported file type into plain text for AI analysis.
@@ -15,9 +9,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 export async function parseFileToText(file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
 
-  // PDF
+  // PDF — parsed server-side
   if (ext === 'pdf') {
-    return parsePdf(file)
+    return parsePdfViaServer(file)
   }
 
   // Word documents
@@ -34,26 +28,23 @@ export async function parseFileToText(file: File): Promise<string> {
   return file.text()
 }
 
-async function parsePdf(file: File): Promise<string> {
+async function parsePdfViaServer(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
-  const lines: string[] = [`[PDF: ${file.name}]`]
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)))
 
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i)
-    const content = await page.getTextContent()
-    const pageText = content.items
-      .map((item: unknown) => {
-        const i = item as { str?: string }
-        return i.str ?? ''
-      })
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-    if (pageText) lines.push(pageText)
+  const response = await fetch('/api/parse-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pdfBase64: base64, filename: file.name }),
+  })
+
+  const data = await response.json() as { text?: string; error?: string }
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || 'Failed to parse PDF')
   }
 
-  return lines.join('\n')
+  return data.text || ''
 }
 
 async function parseWordDoc(file: File): Promise<string> {
