@@ -7,6 +7,65 @@ interface Props {
   userId: string
 }
 
+function addWorkingDays(date: Date, days: number): Date {
+  const result = new Date(date)
+  let added = 0
+  while (added < days) {
+    result.setDate(result.getDate() + 1)
+    const day = result.getDay()
+    if (day !== 0 && day !== 6) added++
+  }
+  return result
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().split('T')[0]
+}
+
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function DeadlineBadge({ label, due, sent, onMarkSent }: {
+  label: string
+  due: string
+  sent?: boolean
+  onMarkSent: () => void
+}) {
+  const days = daysUntil(due)
+  const formatted = new Date(due).toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })
+
+  if (sent) {
+    return (
+      <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+        ✅ {label} sent
+      </span>
+    )
+  }
+
+  const urgent = days <= 3
+  const overdue = days < 0
+
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onMarkSent() }}
+      className={`text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+        overdue
+          ? 'bg-red-600 text-white border-red-600'
+          : urgent
+            ? 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
+            : 'bg-gray-100 text-gray-600 border-gray-200'
+      }`}
+      title={`Mark ${label} as sent`}
+    >
+      {overdue ? `⚠️ ${label} OVERDUE` : `📅 ${label} due ${formatted}${days <= 7 ? ` (${days}d)` : ''}`}
+    </button>
+  )
+}
+
 const STATUS_COLORS: Record<string, string> = {
   Draft: 'bg-gray-100 text-gray-700',
   Sent: 'bg-blue-100 text-blue-700',
@@ -95,7 +154,12 @@ export default function VariationsTab({ projectId, userId }: Props) {
       const claims = result.claims ?? []
       // Clear existing AI-found variations before saving fresh results
       await clearVariations(projectId)
+      const today = new Date()
       for (const claim of claims) {
+        const notice1Due = addWorkingDays(today, 20)
+        const notice2Due = addWorkingDays(notice1Due, 20)
+        const monthlyDue = new Date(today)
+        monthlyDue.setMonth(monthlyDue.getMonth() + 1)
         await saveVariation(projectId, userId, {
           title: claim.title,
           description: claim.description,
@@ -103,6 +167,12 @@ export default function VariationsTab({ projectId, userId }: Props) {
           status: 'Draft',
           deadline: claim.deadlineStatus,
           notice_drafted: claim.draftNotice ?? '',
+          claim_date: toDateStr(today),
+          notice_1_due: toDateStr(notice1Due),
+          notice_1_sent: false,
+          notice_2_due: toDateStr(notice2Due),
+          notice_2_sent: false,
+          next_monthly_due: toDateStr(monthlyDue),
         })
       }
       await load()
@@ -148,7 +218,12 @@ export default function VariationsTab({ projectId, userId }: Props) {
       if (!response.ok || result.error) throw new Error(result.error ?? 'Analysis failed')
 
       const claims = result.claims ?? []
+      const todayProg = new Date()
       for (const claim of claims) {
+        const n1 = addWorkingDays(todayProg, 20)
+        const n2 = addWorkingDays(n1, 20)
+        const monthly = new Date(todayProg)
+        monthly.setMonth(monthly.getMonth() + 1)
         await saveVariation(projectId, userId, {
           title: claim.title,
           description: claim.description,
@@ -156,6 +231,12 @@ export default function VariationsTab({ projectId, userId }: Props) {
           status: 'Draft',
           deadline: claim.deadlineStatus,
           notice_drafted: claim.draftNotice ?? '',
+          claim_date: toDateStr(todayProg),
+          notice_1_due: toDateStr(n1),
+          notice_1_sent: false,
+          notice_2_due: toDateStr(n2),
+          notice_2_sent: false,
+          next_monthly_due: toDateStr(monthly),
         })
       }
       await load()
@@ -207,7 +288,21 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
       } catch { /* leave blank if fails */ }
     }
 
-    await saveVariation(projectId, userId, { ...form, notice_drafted: notice })
+    const todayManual = new Date()
+    const n1m = addWorkingDays(todayManual, 20)
+    const n2m = addWorkingDays(n1m, 20)
+    const monthlyM = new Date(todayManual)
+    monthlyM.setMonth(monthlyM.getMonth() + 1)
+    await saveVariation(projectId, userId, {
+      ...form,
+      notice_drafted: notice,
+      claim_date: toDateStr(todayManual),
+      notice_1_due: toDateStr(n1m),
+      notice_1_sent: false,
+      notice_2_due: toDateStr(n2m),
+      notice_2_sent: false,
+      next_monthly_due: toDateStr(monthlyM),
+    })
     setForm({ title: '', description: '', value: '', status: 'Draft', deadline: '', notice_drafted: '' })
     setShowAdd(false)
     await load()
@@ -223,6 +318,22 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
     if (!confirm('Delete this variation?')) return
     await deleteVariation(id)
     setVariations(prev => prev.filter(v => v.id !== id))
+  }
+
+  const handleMarkSent = async (id: string, type: 'notice_1' | 'notice_2') => {
+    const patch = type === 'notice_1'
+      ? { notice_1_sent: true }
+      : { notice_2_sent: true }
+    await updateVariation(id, patch)
+    setVariations(prev => prev.map(v => v.id === id ? { ...v, ...patch } : v))
+  }
+
+  const handleRollMonthly = async (id: string, currentDue: string) => {
+    const next = new Date(currentDue)
+    next.setMonth(next.getMonth() + 1)
+    const patch = { next_monthly_due: toDateStr(next) }
+    await updateVariation(id, patch)
+    setVariations(prev => prev.map(v => v.id === id ? { ...v, ...patch } : v))
   }
 
   const handleStartAdjust = (v: Variation) => {
@@ -370,7 +481,34 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
                     <div className="font-semibold text-gray-900 text-sm">{v.title || 'Untitled variation'}</div>
                   )}
                   {v.deadline && (
-                    <div className="text-xs text-red-500 mt-0.5">⏰ Deadline: {v.deadline}</div>
+                    <div className="text-xs text-red-500 mt-0.5">⏰ {v.deadline}</div>
+                  )}
+                  {/* Deadline tracker */}
+                  {v.notice_1_due && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <DeadlineBadge
+                        label="Notice 1"
+                        due={v.notice_1_due}
+                        sent={v.notice_1_sent}
+                        onMarkSent={() => handleMarkSent(v.id, 'notice_1')}
+                      />
+                      {v.notice_2_due && (
+                        <DeadlineBadge
+                          label="Notice 2"
+                          due={v.notice_2_due}
+                          sent={v.notice_2_sent}
+                          onMarkSent={() => handleMarkSent(v.id, 'notice_2')}
+                        />
+                      )}
+                      {v.next_monthly_due && (
+                        <DeadlineBadge
+                          label="Monthly"
+                          due={v.next_monthly_due}
+                          sent={false}
+                          onMarkSent={() => handleRollMonthly(v.id, v.next_monthly_due!)}
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">

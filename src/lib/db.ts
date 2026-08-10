@@ -58,6 +58,12 @@ export interface Variation {
   status: string
   deadline?: string
   notice_drafted?: string
+  claim_date?: string
+  notice_1_due?: string
+  notice_1_sent?: boolean
+  notice_2_due?: string
+  notice_2_sent?: boolean
+  next_monthly_due?: string
   created_at: string
 }
 
@@ -68,6 +74,12 @@ export interface VariationInput {
   status?: string
   deadline?: string
   notice_drafted?: string
+  claim_date?: string
+  notice_1_due?: string
+  notice_1_sent?: boolean
+  notice_2_due?: string
+  notice_2_sent?: boolean
+  next_monthly_due?: string
 }
 
 export interface ChatMessage {
