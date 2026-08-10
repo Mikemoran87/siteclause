@@ -246,7 +246,25 @@ export default function VariationsTab({ projectId, userId }: Props) {
                         onClick={() => {
                           if (showCalc === v.id) { setShowCalc(null) } else {
                             setShowCalc(v.id)
-                            setCalc({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
+                            // Try to pre-fill from variation value and description
+                            const totalVal = parseFloat((v.value ?? '').replace(/[^0-9.]/g, '')) || 0
+                            // Look for labour hours in description (e.g. "144 man hours", "144 hrs")
+                            const hoursMatch = (v.description + ' ' + (v.notice_drafted ?? '')).match(/(\d+)\s*(?:man\s*)?(?:hours?|hrs?)/i)
+                            const hours = hoursMatch ? hoursMatch[1] : ''
+                            // Look for rate (e.g. "€57/hr", "57 per hour")
+                            const rateMatch = (v.description + ' ' + (v.notice_drafted ?? '')).match(/€(\d+)\/hr|(\d+)\s*per\s*hour/i)
+                            const rate = rateMatch ? (rateMatch[1] || rateMatch[2]) : ''
+                            // Estimate materials as remainder after labour
+                            const labourTotal = (parseFloat(hours) || 0) * (parseFloat(rate) || 0)
+                            const mats = labourTotal > 0 && totalVal > labourTotal
+                              ? String(Math.round(totalVal - labourTotal))
+                              : totalVal > 0 ? String(Math.round(totalVal * 0.6)) : ''
+                            setCalc({
+                              labourHours: hours,
+                              labourRate: rate,
+                              materials: mats,
+                              overhead: '15'
+                            })
                           }
                         }}
                         className="text-xs text-[#1B4332] font-semibold min-h-[44px] flex items-center"
