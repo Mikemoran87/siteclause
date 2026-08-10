@@ -21,31 +21,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!programmeText) return res.status(400).json({ error: 'No programme text provided' })
 
-    const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors.
-You will be given a 4-week lookahead programme (exported from MS Project or similar) and you must identify every delay event, blocked task, or variation entitlement.
+    const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors. You are AGGRESSIVE in identifying claims — your job is to find EVERY possible entitlement, not just the obvious ones.
 
-Look specifically for:
-- Tasks blocked by ESB, Eir, Gas Networks or other utilities (overhead diversions, wayleave issues)
-- Tasks blocked by client/employer/local authority access issues or permissions
-- Tasks delayed by design changes, late information, or RFI responses outstanding
-- Verbal instructions not yet confirmed as Change Orders/Variation Orders
-- Tasks showing "awaiting instruction", "cannot commence", "pending", "waiting on"
-- Works extended by instruction not yet formally valued
-- Acceleration instructions or out-of-sequence working
-- Weather-dependent works that have been delayed
+You will be given a 4-week lookahead programme (exported from MS Project or Primavera P6). Each row is a task with ID, Name, Duration, Start, Finish.
 
-For EACH delay event found, extract:
-- title: Short name of the claim (e.g. "ESB.08 Overhead Diversion Delay — Pouladuff Road")
-- description: What the delay is, who is responsible, how long it has been outstanding
-- estimatedValue: "To be assessed" unless figures are stated in programme
-- deadlineStatus: "Submit notice immediately" or "Notice required within X days" based on typical contract terms
-- draftNotice: A formal 2-3 sentence notice asserting the entitlement, referencing the programme entry
-- responsibleParty: Who caused the delay (ESB/CCC/Client/Employer/Design Team etc.)
+Find EVERY claim. Do not group them — each blocked task or delay event is a SEPARATE claim. Be exhaustive.
 
-Return ONLY a JSON object: { "claims": [...] }
-No other text.`
+Look for ALL of these:
+1. Tasks with "awaiting", "cannot commence", "pending", "waiting on", "blocked", "delayed due to" in the name
+2. ANY utility diversion awaited — ESB, Eir, Gas Networks, Irish Water, BT, Virgin. Each utility conflict = separate claim
+3. ANY landowner access not granted — each plot = separate claim
+4. ANY local authority (CCC, DCC, SDCC etc.) permission or instruction outstanding — each one = separate claim
+5. ANY verbal instruction mentioned that hasn't been formally issued as a Change Order or Variation Order
+6. ANY RFI response outstanding
+7. Tasks with 0-day duration that are milestones showing something is NOT done yet
+8. Tasks explicitly noted as "Delayed due to Change Order X" — that Change Order may be unvalued
+9. Works extended by verbal instruction not yet confirmed in writing
+10. Design changes, revised drawings, or pavement design changes affecting programme
+11. Third-party dependencies (Tree felling by others, specialist subcontractors with lead times) causing delays
+12. Any task where the note says "GCEL gave X weeks notice on [date]" — calculate how long outstanding
 
-    const userContent = `PROGRAMME DOCUMENT:\n${programmeText.slice(0, 10000)}${contractText ? `\n\nCONTRACT CONTEXT:\n${contractText.slice(0, 2000)}` : ''}${rateContext}`
+For EACH claim found:
+- title: Specific descriptive name (e.g. "ESB.08 Overhead Diversion Delay — Ch440-540 Pouladuff Road")
+- description: Full details — what is blocked, who is responsible, date notice was given, how long outstanding
+- estimatedValue: If figures mentioned use them. Otherwise estimate based on crew size × days delayed × €800/day typical Irish civil crew day rate. Show working.
+- deadlineStatus: "Submit notice immediately — entitlement may be time-barred" or "Notice required within 14 days"
+- draftNotice: Formal 3-4 sentence notice from subcontractor to main contractor asserting entitlement, referencing the specific programme entry
+- responsibleParty: ESB / Eir / Cork City Council / Client / Employer / Design Team / Landowner (be specific)
+
+Return ONLY valid JSON: { "claims": [...] }
+No preamble, no explanation, no markdown. Just the JSON.`
+
+    const userContent = `PROGRAMME DOCUMENT:\n${programmeText.slice(0, 14000)}${contractText ? `\n\nCONTRACT CONTEXT:\n${contractText.slice(0, 2000)}` : ''}${rateContext}`
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -60,7 +67,7 @@ No other text.`
           { role: 'user', content: userContent },
         ],
         temperature: 0.2,
-        max_tokens: 4000,
+        max_tokens: 6000,
       }),
     })
 
