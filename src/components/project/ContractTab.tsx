@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { saveContract, getContract } from '../../lib/db'
 import type { Contract } from '../../lib/db'
+import { parseFileToText } from '../../lib/parseFile'
 
 interface Props {
   projectId: string
@@ -32,7 +33,7 @@ export default function ContractTab({ projectId, userId }: Props) {
     setError('')
     setSaving(true)
     try {
-      const text = await file.text()
+      const text = await parseFileToText(file)
       await saveContract(projectId, userId, file.name, text)
       await loadContract()
     } catch (err: unknown) {
