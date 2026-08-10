@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { saveContract, getContract } from '../../lib/db'
+import { saveContract, getContract, getCorrespondence, saveVariation } from '../../lib/db'
 import type { Contract } from '../../lib/db'
 import { parseFileToText } from '../../lib/parseFile'
 
 interface Props {
   projectId: string
   userId: string
+  onVariationsFound?: () => void
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -29,13 +30,15 @@ function isSpreadsheet(fileType?: string, filename?: string): boolean {
   return ['xlsx', 'xls', 'csv'].includes(ext)
 }
 
-export default function ContractTab({ projectId, userId }: Props) {
+export default function ContractTab({ projectId, userId, onVariationsFound }: Props) {
   const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
   const [error, setError] = useState('')
+  const [analysing, setAnalysing] = useState(false)
+  const [analyseSuccess, setAnalyseSuccess] = useState('')
 
   useEffect(() => {
     loadContract()
@@ -90,6 +93,45 @@ export default function ContractTab({ projectId, userId }: Props) {
     a.href = contract.file_data
     a.download = contract.filename ?? 'contract'
     a.click()
+  }
+
+  const handleAnalyse = async () => {
+    if (!contract?.content) return
+    setAnalysing(true)
+    setError('')
+    setAnalyseSuccess('')
+    try {
+      // Get all correspondence
+      const corrItems = await getCorrespondence(projectId)
+      const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
+
+      const response = await fetch('/api/analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contractText: contract.content, correspondenceText }),
+      })
+      if (!response.ok) throw new Error('Analysis failed')
+      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string; severity: string }> }
+
+      // Save each claim as a variation
+      const claims = result.claims ?? []
+      for (const claim of claims) {
+        await saveVariation(projectId, userId, {
+          title: claim.title,
+          description: claim.description,
+          value: claim.estimatedValue,
+          status: 'Draft',
+          deadline: claim.deadlineStatus,
+          notice_drafted: claim.draftNotice ?? '',
+        })
+      }
+      setAnalyseSuccess(`✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''} — check the Variations tab`)
+      onVariationsFound?.()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Analysis failed'
+      setError(msg)
+    }
+    setAnalysing(false)
   }
 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
@@ -160,6 +202,33 @@ export default function ContractTab({ projectId, userId }: Props) {
                 />
               </label>
             </div>
+          </div>
+
+          {/* Find Variations Button */}
+          <div className="px-4 md:px-5 py-4 border-b border-gray-100 bg-amber-50">
+            {analyseSuccess && (
+              <p className="text-sm text-green-700 font-semibold mb-3">{analyseSuccess}</p>
+            )}
+            <button
+              onClick={handleAnalyse}
+              disabled={analysing || !contract?.content}
+              className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] flex items-center justify-center gap-2"
+            >
+              {analysing ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Analysing contract and correspondence…
+                </>
+              ) : (
+                '🔍 Find Variation Claims'
+              )}
+            </button>
+            <p className="text-xs text-amber-700 mt-2 text-center">
+              Analyses your contract + all uploaded correspondence to find every claim you're entitled to
+            </p>
           </div>
 
           {/* Content */}

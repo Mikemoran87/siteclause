@@ -148,7 +148,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
           <OverviewTab project={project} onUpdated={loadProject} />
         )}
         {activeTab === 'contract' && (
-          <ContractTab projectId={projectId} userId={userId} />
+          <ContractTab projectId={projectId} userId={userId} onVariationsFound={() => setActiveTab('variations')} />
         )}
         {activeTab === 'correspondence' && (
           <CorrespondenceTab
