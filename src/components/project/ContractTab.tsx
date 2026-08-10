@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { saveContract, getContract } from '../../lib/db'
+import { saveContract, getContract, deleteContract } from '../../lib/db'
 import type { Contract } from '../../lib/db'
 import { parseFileToText } from '../../lib/parseFile'
 
@@ -36,6 +36,7 @@ export default function ContractTab({ projectId, userId }: Props) {
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
   const [error, setError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     loadContract()
@@ -82,6 +83,13 @@ export default function ContractTab({ projectId, userId }: Props) {
       setError(msg)
     }
     setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    await deleteContract(projectId)
+    setContract(null)
+    setConfirmDelete(false)
   }
 
   const handleDownload = () => {
@@ -159,6 +167,16 @@ export default function ContractTab({ projectId, userId }: Props) {
                   disabled={saving}
                 />
               </label>
+              <button
+                onClick={handleDelete}
+                className={`text-sm font-semibold rounded-lg px-3 py-2 transition-colors min-h-[44px] flex items-center flex-shrink-0 ${
+                  confirmDelete
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'text-red-600 border border-red-300 hover:bg-red-50'
+                }`}
+              >
+                {confirmDelete ? '⚠️ Confirm Delete' : '🗑 Delete'}
+              </button>
             </div>
           </div>
 

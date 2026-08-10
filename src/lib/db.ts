@@ -165,6 +165,10 @@ export async function getContract(projectId: string): Promise<Contract | null> {
   return data
 }
 
+export async function deleteContract(projectId: string): Promise<void> {
+  await supabase.from('contracts').delete().eq('project_id', projectId)
+}
+
 // ── Correspondence ─────────────────────────────────────────────────────────────
 
 export async function saveCorrespondence(
