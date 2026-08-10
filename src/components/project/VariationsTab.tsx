@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariationStatus, deleteVariation, clearVariations, getContract, getCorrespondence, getRateCard } from '../../lib/db'
+import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, getContract, getCorrespondence, getRateCard } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -42,6 +42,9 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [calc, setCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
   const [analysing, setAnalysing] = useState(false)
   const [analyseMsg, setAnalyseMsg] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [editTitle, setEditTitle] = useState('')
   const [form, setForm] = useState<VariationInput>({
     title: '',
     description: '',
@@ -126,7 +129,20 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this variation?')) return
     await deleteVariation(id)
-    await load()
+    setVariations(prev => prev.filter(v => v.id !== id))
+  }
+
+  const handleStartAdjust = (v: Variation) => {
+    setEditingId(v.id)
+    setEditTitle(v.title)
+    setEditValue((v.value ?? '').replace(/[^0-9.]/g, ''))
+  }
+
+  const handleSaveAdjust = async (id: string) => {
+    const formatted = editValue ? `€${parseFloat(editValue).toLocaleString('en-IE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : ''
+    await updateVariation(id, { title: editTitle, value: formatted })
+    setVariations(prev => prev.map(v => v.id === id ? { ...v, title: editTitle, value: formatted } : v))
+    setEditingId(null)
   }
 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
@@ -201,32 +217,74 @@ export default function VariationsTab({ projectId, userId }: Props) {
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[v.status] ?? 'bg-gray-100 text-gray-600'}`}>
                       {v.status}
                     </span>
-                    {v.value && <span className="text-amber-600 font-bold text-sm">{v.value}</span>}
+                    {editingId === v.id ? (
+                      <input
+                        type="number"
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        placeholder="Value €"
+                        className="text-amber-600 font-bold text-sm border border-amber-300 rounded px-2 py-0.5 w-28 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        onClick={e => e.stopPropagation()}
+                      />
+                    ) : (
+                      v.value && <span className="text-amber-600 font-bold text-sm">{v.value}</span>
+                    )}
                   </div>
-                  <div className="font-semibold text-gray-900 text-sm">{v.title || 'Untitled variation'}</div>
+                  {editingId === v.id ? (
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      className="font-semibold text-gray-900 text-sm border border-gray-300 rounded px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-green-400"
+                      onClick={e => e.stopPropagation()}
+                    />
+                  ) : (
+                    <div className="font-semibold text-gray-900 text-sm">{v.title || 'Untitled variation'}</div>
+                  )}
                   {v.deadline && (
                     <div className="text-xs text-red-500 mt-0.5">⏰ Deadline: {v.deadline}</div>
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
-                  <select
-                    value={v.status}
-                    onChange={e => handleStatusChange(v.id, e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none min-h-[36px]"
-                  >
-                    {STATUSES.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                  <button
-                    onClick={() => setExpanded(expanded === v.id ? null : v.id)}
-                    className="text-xs text-[#1B4332] font-semibold border border-[#1B4332] rounded-lg px-2.5 py-2 min-h-[44px] flex items-center"
-                  >
-                    {expanded === v.id ? 'Hide' : 'Details'}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(v.id)}
-                    className="text-xs text-red-400 border border-red-200 rounded-lg px-2.5 py-2 min-h-[44px] flex items-center"
-                  >Del</button>
+                  {editingId !== v.id && (
+                    <select
+                      value={v.status}
+                      onChange={e => handleStatusChange(v.id, e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none min-h-[36px]"
+                    >
+                      {STATUSES.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  )}
+                  {editingId === v.id ? (
+                    <>
+                      <button
+                        onClick={() => handleSaveAdjust(v.id)}
+                        className="text-xs text-white bg-[#1B4332] rounded-lg px-2.5 py-2 min-h-[44px] flex items-center font-semibold"
+                      >Save</button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-2 min-h-[44px] flex items-center"
+                      >Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setExpanded(expanded === v.id ? null : v.id)}
+                        className="text-xs text-[#1B4332] font-semibold border border-[#1B4332] rounded-lg px-2.5 py-2 min-h-[44px] flex items-center"
+                      >
+                        {expanded === v.id ? 'Hide' : 'Details'}
+                      </button>
+                      <button
+                        onClick={() => handleStartAdjust(v)}
+                        className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2.5 py-2 min-h-[44px] flex items-center"
+                      >Adjust</button>
+                      <button
+                        onClick={() => handleDelete(v.id)}
+                        className="text-xs text-red-400 border border-red-200 rounded-lg px-2.5 py-2 min-h-[44px] flex items-center"
+                      >Del</button>
+                    </>
+                  )}
                 </div>
               </div>
               {expanded === v.id && (

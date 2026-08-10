@@ -233,6 +233,10 @@ export async function getVariations(projectId: string): Promise<Variation[]> {
   return data ?? []
 }
 
+export async function updateVariation(variationId: string, patch: Partial<VariationInput>): Promise<void> {
+  await supabase.from('variations').update(patch).eq('id', variationId)
+}
+
 export async function updateVariationStatus(variationId: string, status: string): Promise<void> {
   const { error } = await supabase
     .from('variations')
