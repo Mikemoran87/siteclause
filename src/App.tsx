@@ -35,8 +35,13 @@ const isLogin = () => {
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
-  const [appPage, setAppPage] = useState<AppPage>('auth')
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [appPage, setAppPage] = useState<AppPage>(() => {
+    const saved = sessionStorage.getItem('sc_page') as AppPage | null
+    return saved ?? 'auth'
+  })
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
+    return sessionStorage.getItem('sc_project_id') ?? null
+  })
   const [demoMode, setDemoMode] = useState(isDemo())
   const [analyseMode, setAnalyseMode] = useState(isAnalyse())
   const [loginMode, setLoginMode] = useState(isLogin())
@@ -45,11 +50,34 @@ export default function App() {
   const [demoPage, setDemoPage] = useState<DemoPage>('landing')
   const [demoResults, setDemoResults] = useState<AnalysisResult | null>(null)
 
+  // Persist navigation state across tab switches
+  useEffect(() => {
+    sessionStorage.setItem('sc_page', appPage)
+  }, [appPage])
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      sessionStorage.setItem('sc_project_id', selectedProjectId)
+    } else {
+      sessionStorage.removeItem('sc_project_id')
+    }
+  }, [selectedProjectId])
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setSessionLoading(false)
-      if (session) setAppPage('dashboard')
+      if (session) {
+        // Restore saved page if available
+        const savedPage = sessionStorage.getItem('sc_page') as AppPage | null
+        const savedProject = sessionStorage.getItem('sc_project_id')
+        if (savedPage === 'project' && savedProject) {
+          setAppPage('project')
+          setSelectedProjectId(savedProject)
+        } else {
+          setAppPage('dashboard')
+        }
+      }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -62,6 +90,8 @@ export default function App() {
       } else {
         setAppPage('auth')
         setSelectedProjectId(null)
+        sessionStorage.removeItem('sc_page')
+        sessionStorage.removeItem('sc_project_id')
       }
     })
 
