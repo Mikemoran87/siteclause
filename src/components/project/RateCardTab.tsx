@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import { getRateCard, saveRateCard } from '../../lib/db'
+import { getRateCard, saveRateCard, getContract } from '../../lib/db'
 import type { Rate } from '../../lib/db'
 
 interface Props {
@@ -83,10 +83,67 @@ export default function RateCardTab({ projectId, userId }: Props) {
   const [preview, setPreview] = useState<Rate[] | null>(null)
   const [newRow, setNewRow] = useState<Rate>({ category: 'Labour', description: '', unit: 'hr', rate: 0 })
   const [showAdd, setShowAdd] = useState(false)
+  const [extracting, setExtracting] = useState(false)
 
   useEffect(() => {
     load()
   }, [projectId])
+
+  const handleExtractFromContract = async () => {
+    setExtracting(true)
+    setError('')
+    setSuccess('')
+    try {
+      const contract = await getContract(projectId)
+      if (!contract?.content) throw new Error('No contract uploaded yet — upload a contract first')
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            role: 'user',
+            content: `Extract all rates, prices and unit costs from this contract. Return ONLY a JSON array with this exact format, no other text:
+[{"category":"Labour","description":"General Labourer","unit":"hr","rate":38},...]
+
+Categories must be one of: Labour, Plant, Materials, Subcontract, Overhead & Profit, Other
+Units must be one of: hr, m, m², m³, no, t, sum, %
+
+Contract text:
+${contract.content.slice(0, 8000)}`
+          }],
+          contractText: contract.content
+        }),
+      })
+
+      const data = await response.json() as { reply?: string; error?: string }
+      if (!response.ok || data.error) throw new Error(data.error || 'Extraction failed')
+
+      // Parse the JSON from the AI response
+      const reply = data.reply ?? ''
+      const jsonMatch = reply.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) throw new Error('No rates found in contract — the contract may not contain a Bill of Quantities')
+
+      const extracted = JSON.parse(jsonMatch[0]) as Rate[]
+      if (!Array.isArray(extracted) || extracted.length === 0) throw new Error('No rates found in contract')
+
+      // Merge with existing rates (extracted rates take priority)
+      const merged = [...extracted]
+      for (const def of DEFAULT_RATES) {
+        if (!merged.find(r => r.description.toLowerCase() === def.description.toLowerCase())) {
+          merged.push(def)
+        }
+      }
+
+      setRates(merged)
+      await saveRateCard(projectId, userId, merged)
+      setSuccess(`✅ Extracted ${extracted.length} rate${extracted.length !== 1 ? 's' : ''} from contract and saved`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Extraction failed'
+      setError(msg)
+    }
+    setExtracting(false)
+  }
 
   const load = async () => {
     setLoading(true)
@@ -167,6 +224,30 @@ export default function RateCardTab({ projectId, userId }: Props) {
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-lg">{success}</div>
       )}
+
+      {/* Extract from contract button */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <button
+          onClick={handleExtractFromContract}
+          disabled={extracting}
+          className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-black py-3.5 rounded-xl text-sm transition-colors min-h-[44px] flex items-center justify-center gap-2"
+        >
+          {extracting ? (
+            <>
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Reading contract for rates…
+            </>
+          ) : (
+            '✨ Extract Rates from Contract'
+          )}
+        </button>
+        <p className="text-xs text-amber-700 mt-2 text-center">
+          AI reads your contract and pulls out all BOQ rates automatically
+        </p>
+      </div>
 
       {/* Header actions */}
       <div className="flex flex-wrap gap-2 items-center justify-between">
