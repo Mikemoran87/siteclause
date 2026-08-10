@@ -1,12 +1,21 @@
 import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Use the legacy build to avoid worker issues in browser
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
 /**
  * Parse any supported file type into plain text for AI analysis.
- * Supports: .txt, .pdf (text-based), .csv, .xlsx, .xls, .docx
+ * Supports: .txt, .pdf, .docx, .doc, .csv, .xlsx, .xls
  */
 export async function parseFileToText(file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+
+  // PDF
+  if (ext === 'pdf') {
+    return parsePdf(file)
+  }
 
   // Word documents
   if (['docx', 'doc'].includes(ext)) {
@@ -18,8 +27,30 @@ export async function parseFileToText(file: File): Promise<string> {
     return parseSpreadsheet(file)
   }
 
-  // Plain text / PDF / anything else — read as text
+  // Plain text / anything else
   return file.text()
+}
+
+async function parsePdf(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+  const lines: string[] = [`[PDF: ${file.name}]`]
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    const pageText = content.items
+      .map((item: unknown) => {
+        const i = item as { str?: string }
+        return i.str ?? ''
+      })
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (pageText) lines.push(pageText)
+  }
+
+  return lines.join('\n')
 }
 
 async function parseWordDoc(file: File): Promise<string> {
@@ -47,7 +78,6 @@ async function parseSpreadsheet(file: File): Promise<string> {
 
     for (const row of rows) {
       const cells = row.map((cell) => String(cell ?? '').trim())
-      // Only include rows that have at least one non-empty cell
       if (cells.some((c) => c !== '')) {
         lines.push(cells.join('\t'))
       }
