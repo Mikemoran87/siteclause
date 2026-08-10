@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariationStatus, deleteVariation, getContract, getCorrespondence } from '../../lib/db'
+import { getVariations, saveVariation, updateVariationStatus, deleteVariation, getContract, getCorrespondence, getRateCard } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -64,10 +64,18 @@ export default function VariationsTab({ projectId, userId }: Props) {
       if (!contract?.content) throw new Error('No contract uploaded yet — please upload a contract first')
       const corrItems = await getCorrespondence(projectId)
       const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
+
+      // Include rate card so AI uses project-specific rates
+      const rates = await getRateCard(projectId)
+      const rateContext = rates.length > 0
+        ? `\n\nPROJECT RATE CARD (use these rates when calculating variation values):\n` +
+          rates.map(r => `- ${r.category} / ${r.description}: €${r.rate} per ${r.unit}`).join('\n')
+        : ''
+
       const response = await fetch('/api/analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractText: contract.content, correspondenceText }),
+        body: JSON.stringify({ contractText: contract.content + rateContext, correspondenceText }),
       })
       if (!response.ok) throw new Error('Analysis failed')
       const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }> }
