@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { getContract, saveChatMessage, getChatMessages } from '../../lib/db'
-import type { ChatMessage } from '../../lib/db'
+import { getContract, saveChatMessage, getChatMessages, getRateCard } from '../../lib/db'
+import type { ChatMessage, Rate } from '../../lib/db'
 
 interface Props {
   projectId: string
@@ -19,6 +19,7 @@ const SUGGESTED_QUESTIONS = [
 export default function ChatTab({ projectId, userId, projectName }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [contractText, setContractText] = useState('')
+  const [rateCard, setRateCard] = useState<Rate[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
@@ -34,12 +35,14 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
 
   const init = async () => {
     setInitialLoading(true)
-    const [contract, history] = await Promise.all([
+    const [contract, history, rates] = await Promise.all([
       getContract(projectId),
       getChatMessages(projectId),
+      getRateCard(projectId),
     ])
     setContractText(contract?.content ?? '')
     setMessages(history)
+    setRateCard(rates)
     setInitialLoading(false)
   }
 
@@ -62,11 +65,20 @@ export default function ChatTab({ projectId, userId, projectName }: Props) {
 
     const history = [...messages, userMsg].map(m => ({ role: m.role ?? 'user', content: m.content ?? '' }))
 
+    // Build rate card context string
+    let rateContext = ''
+    if (rateCard.length > 0) {
+      const rows = rateCard.map(r =>
+        `${r.category} | ${r.description} | ${r.unit} | ${r.unit === '%' ? r.rate + '%' : '€' + r.rate}`
+      ).join('\n')
+      rateContext = `\n\nProject Rate Card (use these rates when calculating variation values):\nCategory | Description | Unit | Rate\n${rows}`
+    }
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractText, messages: history }),
+        body: JSON.stringify({ contractText: contractText + rateContext, messages: history }),
       })
       if (!response.ok) throw new Error('API error')
       const data = await response.json()

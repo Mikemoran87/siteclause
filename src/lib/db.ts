@@ -260,3 +260,33 @@ export async function clearChatMessages(projectId: string): Promise<void> {
     .eq('project_id', projectId)
   if (error) throw error
 }
+
+// ── Rate Cards ─────────────────────────────────────────────────────────────────
+
+export interface Rate {
+  category: string
+  description: string
+  unit: string
+  rate: number
+}
+
+export async function getRateCard(projectId: string): Promise<Rate[]> {
+  const { data, error } = await supabase
+    .from('rate_cards')
+    .select('rates')
+    .eq('project_id', projectId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) return []
+  return (data?.rates as Rate[]) ?? []
+}
+
+export async function saveRateCard(projectId: string, userId: string, rates: Rate[]): Promise<void> {
+  // Upsert: delete existing then insert
+  await supabase.from('rate_cards').delete().eq('project_id', projectId)
+  const { error } = await supabase
+    .from('rate_cards')
+    .insert({ project_id: projectId, user_id: userId, rates, updated_at: new Date().toISOString() })
+  if (error) throw error
+}

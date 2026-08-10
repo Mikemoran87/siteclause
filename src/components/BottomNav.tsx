@@ -2,6 +2,7 @@ const TAB_CONFIG = [
   { id: 'overview', icon: '🏠', label: 'Overview' },
   { id: 'contract', icon: '📄', label: 'Contract' },
   { id: 'correspondence', icon: '💬', label: 'Messages' },
+  { id: 'rates', icon: '💰', label: 'Rates' },
   { id: 'variations', icon: '📋', label: 'Variations' },
   { id: 'notices', icon: '📨', label: 'Notices' },
   { id: 'chat', icon: '🤖', label: 'Chat' },
@@ -18,7 +19,7 @@ export default function BottomNav({ activeTab, onTabChange }: Props) {
       className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="grid grid-cols-6">
+      <div className="grid grid-cols-7">
         {TAB_CONFIG.map(tab => (
           <button
             key={tab.id}

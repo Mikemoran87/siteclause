@@ -4,12 +4,13 @@ import type { Project } from '../lib/db'
 import OverviewTab from '../components/project/OverviewTab'
 import ContractTab from '../components/project/ContractTab'
 import CorrespondenceTab from '../components/project/CorrespondenceTab'
+import RateCardTab from '../components/project/RateCardTab'
 import VariationsTab from '../components/project/VariationsTab'
 import NoticesTab from '../components/project/NoticesTab'
 import ChatTab from '../components/project/ChatTab'
 import BottomNav from '../components/BottomNav'
 
-type Tab = 'overview' | 'contract' | 'correspondence' | 'variations' | 'notices' | 'chat'
+type Tab = 'overview' | 'contract' | 'correspondence' | 'rates' | 'variations' | 'notices' | 'chat'
 
 interface Props {
   projectId: string
@@ -21,6 +22,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'contract', label: 'Contract' },
   { id: 'correspondence', label: 'Correspondence' },
+  { id: 'rates', label: 'Rates' },
   { id: 'variations', label: 'Variations' },
   { id: 'notices', label: 'Notices' },
   { id: 'chat', label: 'Chat' },
@@ -154,6 +156,9 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
             userId={userId}
             emailPrefix={project.email_prefix ?? `sc-${project.id.slice(0, 8)}`}
           />
+        )}
+        {activeTab === 'rates' && (
+          <RateCardTab projectId={projectId} userId={userId} />
         )}
         {activeTab === 'variations' && (
           <VariationsTab projectId={projectId} userId={userId} />
