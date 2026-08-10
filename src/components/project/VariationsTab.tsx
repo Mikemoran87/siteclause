@@ -42,6 +42,8 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [calc, setCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
   const [analysing, setAnalysing] = useState(false)
   const [analyseMsg, setAnalyseMsg] = useState('')
+  const [progAnalysing, setProgAnalysing] = useState(false)
+  const [progMsg, setProgMsg] = useState('')
   const [projectRates, setProjectRates] = useState<import('../../lib/db').Rate[]>([])
   const [projectName, setProjectName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -106,6 +108,57 @@ export default function VariationsTab({ projectId, userId }: Props) {
       setAnalyseMsg(`❌ ${msg}`)
     }
     setAnalysing(false)
+  }
+
+  const handleProgrammeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setProgAnalysing(true)
+    setProgMsg('')
+    try {
+      // Parse the file to text
+      const { parseFileToText } = await import('../../lib/parseFile')
+      const programmeText = await parseFileToText(file)
+
+      // Get contract for context
+      const contract = await getContract(projectId)
+      const rates = await getRateCard(projectId)
+      const rateContext = rates.length > 0
+        ? `\n\nPROJECT RATE CARD:\n${rates.map(r => `- ${r.description}: €${r.rate} per ${r.unit}`).join('\n')}`
+        : ''
+
+      const response = await fetch('/api/analyse-programme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          programmeText,
+          contractText: contract?.content ?? '',
+          rateContext,
+        }),
+      })
+
+      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }> ; error?: string }
+      if (!response.ok || result.error) throw new Error(result.error ?? 'Analysis failed')
+
+      const claims = result.claims ?? []
+      for (const claim of claims) {
+        await saveVariation(projectId, userId, {
+          title: claim.title,
+          description: claim.description,
+          value: claim.estimatedValue,
+          status: 'Draft',
+          deadline: claim.deadlineStatus,
+          notice_drafted: claim.draftNotice ?? '',
+        })
+      }
+      await load()
+      setProgMsg(`✅ Found ${claims.length} delay claim${claims.length !== 1 ? 's' : ''} from programme`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Analysis failed'
+      setProgMsg(`❌ ${msg}`)
+    }
+    setProgAnalysing(false)
+    e.target.value = ''
   }
 
   const load = async () => {
@@ -224,6 +277,36 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
         </button>
         <p className="text-xs text-amber-700 mt-2 text-center">
           AI reads your contract + correspondence and finds every claim you're entitled to
+        </p>
+      </div>
+
+      {/* Programme Upload */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        {progMsg && (
+          <p className="text-sm font-semibold mb-3 text-gray-700">{progMsg}</p>
+        )}
+        <label className={`w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] cursor-pointer ${progAnalysing ? 'opacity-60 pointer-events-none' : ''}`}>
+          {progAnalysing ? (
+            <>
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Scanning programme for delay claims…
+            </>
+          ) : (
+            '📊 Scan Programme for Delays'
+          )}
+          <input
+            type="file"
+            accept=".pdf,.txt,.xlsx,.xls,.csv,.doc,.docx"
+            onChange={handleProgrammeUpload}
+            className="hidden"
+            disabled={progAnalysing}
+          />
+        </label>
+        <p className="text-xs text-blue-700 mt-2 text-center">
+          Upload your 4-week lookahead (PDF or Excel) — AI finds every blocked task and delay event
         </p>
       </div>
 
