@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
+const MAX_PAGES = 100
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -8,16 +10,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!pdfBase64) return res.status(400).json({ error: 'No PDF data provided' })
 
-    // Dynamically import pdfjs on server side
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs' as string)
 
     const buffer = Buffer.from(pdfBase64, 'base64')
     const uint8 = new Uint8Array(buffer)
 
     const pdf = await pdfjsLib.getDocument({ data: uint8 }).promise
-    const lines: string[] = [`[PDF: ${filename || 'contract.pdf'}]`]
+    const totalPages = pdf.numPages
+    const pagesToProcess = Math.min(totalPages, MAX_PAGES)
 
-    for (let i = 1; i <= pdf.numPages; i++) {
+    const lines: string[] = [`[PDF: ${filename || 'contract.pdf'} — ${totalPages} page${totalPages !== 1 ? 's' : ''}]`]
+
+    for (let i = 1; i <= pagesToProcess; i++) {
       const page = await pdf.getPage(i)
       const content = await page.getTextContent()
       const pageText = content.items
@@ -29,6 +33,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .replace(/\s+/g, ' ')
         .trim()
       if (pageText) lines.push(pageText)
+    }
+
+    if (totalPages > MAX_PAGES) {
+      lines.push(`\n[Note: Only first ${MAX_PAGES} of ${totalPages} pages extracted for analysis]`)
     }
 
     return res.status(200).json({ text: lines.join('\n') })

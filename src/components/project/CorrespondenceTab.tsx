@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveCorrespondence, getCorrespondence, deleteCorrespondence } from '../../lib/db'
 import type { Correspondence } from '../../lib/db'
+// Correspondence type includes file_data and file_type for original-file download
 import { parseFileToText } from '../../lib/parseFile'
 
 interface Props {
@@ -32,14 +33,25 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
     setLoading(false)
   }
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setError('')
     setSaving(true)
     try {
-      const text = await parseFileToText(file)
-      await saveCorrespondence(projectId, userId, text, file.name)
+      const [text, base64] = await Promise.all([
+        parseFileToText(file),
+        fileToBase64(file),
+      ])
+      await saveCorrespondence(projectId, userId, text, file.name, base64, file.type)
       await load()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed'
@@ -47,6 +59,14 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
     }
     setSaving(false)
     e.target.value = ''
+  }
+
+  const handleDownload = (item: Correspondence) => {
+    if (!item.file_data) return
+    const a = document.createElement('a')
+    a.href = item.file_data
+    a.download = item.source ?? 'correspondence'
+    a.click()
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,6 +257,15 @@ export default function CorrespondenceTab({ projectId, userId, emailPrefix }: Pr
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {item.file_data && (
+                    <button
+                      onClick={() => handleDownload(item)}
+                      className="text-xs text-[#1B4332] font-semibold border border-[#1B4332] rounded-lg px-2.5 py-2 hover:bg-green-50 min-h-[44px] flex items-center"
+                      title="Download original file"
+                    >
+                      ↓
+                    </button>
+                  )}
                   <button
                     onClick={() => setExpanded(expanded === item.id ? null : item.id)}
                     className="text-xs text-[#1B4332] font-semibold border border-[#1B4332] rounded-lg px-2.5 py-2 hover:bg-green-50 min-h-[44px] flex items-center"

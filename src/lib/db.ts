@@ -30,6 +30,8 @@ export interface Contract {
   project_id: string
   filename?: string
   content?: string
+  file_data?: string  // base64 data URL of original file
+  file_type?: string  // MIME type e.g. 'application/pdf'
   uploaded_at: string
 }
 
@@ -39,6 +41,8 @@ export interface Correspondence {
   project_id: string
   content?: string
   source?: string
+  file_data?: string  // base64 data URL of original file
+  file_type?: string  // MIME type
   uploaded_at: string
 }
 
@@ -129,14 +133,20 @@ export async function saveContract(
   projectId: string,
   userId: string,
   filename: string,
-  content: string
+  content: string,
+  fileData?: string,  // base64 data URL
+  fileType?: string
 ): Promise<Contract> {
   // Delete existing contract for this project first
   await supabase.from('contracts').delete().eq('project_id', projectId)
 
+  const row: Record<string, unknown> = { project_id: projectId, user_id: userId, filename, content }
+  if (fileData) row.file_data = fileData
+  if (fileType) row.file_type = fileType
+
   const { data, error } = await supabase
     .from('contracts')
-    .insert({ project_id: projectId, user_id: userId, filename, content })
+    .insert(row)
     .select()
     .single()
   if (error) throw error
@@ -161,11 +171,17 @@ export async function saveCorrespondence(
   projectId: string,
   userId: string,
   content: string,
-  source: string
+  source: string,
+  fileData?: string,  // base64 data URL
+  fileType?: string
 ): Promise<Correspondence> {
+  const row: Record<string, unknown> = { project_id: projectId, user_id: userId, content, source }
+  if (fileData) row.file_data = fileData
+  if (fileType) row.file_type = fileType
+
   const { data, error } = await supabase
     .from('correspondence')
-    .insert({ project_id: projectId, user_id: userId, content, source })
+    .insert(row)
     .select()
     .single()
   if (error) throw error
