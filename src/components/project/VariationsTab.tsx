@@ -421,20 +421,24 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
 
       {/* Programme Upload */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">📊 Programme Delay Scanner</div>
+        <p className="text-xs text-blue-700 mb-3">
+          Upload your 4-week lookahead programme(s) here. Select multiple files at once to compare across weeks — the AI finds every blocked task and delay event. Your contract documents are read from the Contract tab automatically.
+        </p>
         {progMsg && (
           <p className="text-sm font-semibold mb-3 text-gray-700">{progMsg}</p>
         )}
-        <label className={`w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] cursor-pointer ${progAnalysing ? 'opacity-60 pointer-events-none' : ''}`}>
+        <label className={`w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] cursor-pointer ${progAnalysing ? 'opacity-60 pointer-events-none' : ''}`}>
           {progAnalysing ? (
             <>
               <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
               </svg>
-              Scanning programme for delay claims…
+              {progMsg || 'Scanning programmes…'}
             </>
           ) : (
-            '📊 Scan Programme for Delays'
+            '📊 Upload & Scan Programme(s)'
           )}
           <input
             type="file"
@@ -445,9 +449,6 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
             multiple
           />
         </label>
-        <p className="text-xs text-blue-700 mt-2 text-center">
-          Upload one or more programmes — AI correlates across all of them and compares what's moved
-        </p>
       </div>
 
       <button

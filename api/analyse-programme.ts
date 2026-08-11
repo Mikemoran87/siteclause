@@ -13,55 +13,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const { programmeText, contractText = '', rateContext = '' } = req.body as {
-      programmeText?: string
-      programmes?: string[]
+    const body = req.body as {
+      programmes?: string[]      // array of programme texts (preferred)
+      programmeText?: string     // single programme (backwards compat)
       contractText?: string
       rateContext?: string
     }
 
-    if (!programmeText) return res.status(400).json({ error: 'No programme text provided' })
+    // Accept either multiple programmes or a single one
+    const programmes: string[] = body.programmes?.length
+      ? body.programmes
+      : body.programmeText
+        ? [body.programmeText]
+        : []
 
-    const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors. You are AGGRESSIVE in identifying claims — your job is to find EVERY possible entitlement, not just the obvious ones.
+    if (programmes.length === 0) {
+      return res.status(400).json({ error: 'No programme text provided' })
+    }
 
-You will be given a 4-week lookahead programme (exported from MS Project or Primavera P6). Each row is a task with ID, Name, Duration, Start, Finish.
+    const contractText = body.contractText ?? ''
+    const rateContext = body.rateContext ?? ''
+    const isMulti = programmes.length > 1
 
-Find EVERY claim. Do not group them — each blocked task or delay event is a SEPARATE claim. Be exhaustive.
+    const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors. Be AGGRESSIVE — find EVERY possible entitlement.
 
-Look for ALL of these:
+${isMulti ? `You have ${programmes.length} programme documents in chronological order. Compare them:
+- Tasks blocked in MULTIPLE programmes = stronger claim (note how many weeks it has persisted)
+- Tasks that got WORSE = escalating claim
+- NEW blocks in later programme = new claim
+Treat each blocked task as a SEPARATE claim even if it appears across multiple programmes.
+
+` : ''}Each programme row has: ID, Name, Duration, Start, Finish, Resources.
+
+Find ALL of these:
 1. Tasks with "awaiting", "cannot commence", "pending", "waiting on", "blocked", "delayed due to" in the name
-2. ANY utility diversion awaited — ESB, Eir, Gas Networks, Irish Water, BT, Virgin. Each utility conflict = separate claim
-3. ANY landowner access not granted — each plot = separate claim
-4. ANY local authority (CCC, DCC, SDCC etc.) permission or instruction outstanding — each one = separate claim
-5. ANY verbal instruction mentioned that hasn't been formally issued as a Change Order or Variation Order
-6. ANY RFI response outstanding
-7. Tasks with 0-day duration that are milestones showing something is NOT done yet
-8. Tasks explicitly noted as "Delayed due to Change Order X" — that Change Order may be unvalued
-9. Works extended by verbal instruction not yet confirmed in writing
-10. Design changes, revised drawings, or pavement design changes affecting programme
-11. Third-party dependencies (Tree felling by others, specialist subcontractors with lead times) causing delays
-12. Any task where the note says "GCEL gave X weeks notice on [date]" — calculate how long outstanding
+2. Utility diversions awaited — ESB, Eir, Gas Networks, Irish Water. Each conflict = separate claim
+3. Landowner access not granted — each plot = separate claim  
+4. Local authority (CCC, DCC etc.) permission/instruction outstanding — each = separate claim
+5. Verbal instructions not confirmed as Change Orders/Variation Orders
+6. RFI responses outstanding
+7. Zero-duration milestone tasks showing something is NOT done
+8. "Delayed due to Change Order X" — that CO may be unvalued
+9. Works extended by verbal instruction not confirmed in writing
+10. Design changes affecting programme
+11. "GCEL gave X weeks notice on [date]" — calculate how long outstanding and state it
 
-For EACH claim found:
-- title: Specific descriptive name (e.g. "ESB.08 Overhead Diversion Delay — Ch440-540 Pouladuff Road")
-- description: Full details — what is blocked, who is responsible, date notice was given, how long outstanding
-- estimatedValue: If figures mentioned use them. Otherwise estimate based on crew size × days delayed × €800/day typical Irish civil crew day rate. Show working.
-- deadlineStatus: "Submit notice immediately — entitlement may be time-barred" or "Notice required within 14 days"
-- draftNotice: Formal 3-4 sentence notice from subcontractor to main contractor asserting entitlement, referencing the specific programme entry
-- responsibleParty: ESB / Eir / Cork City Council / Client / Employer / Design Team / Landowner (be specific)
+For EACH claim:
+- title: Specific name e.g. "ESB.08 Overhead Diversion Delay — Ch440-540 Pouladuff Road"
+- description: What is blocked, who is responsible, when notice was given, how long outstanding${isMulti ? ', which programmes it appears in' : ''}
+- estimatedValue: Use stated figures or estimate: crew days delayed × €800/day. Show working.
+- deadlineStatus: "Submit notice immediately" or "Notice required within X days" based on 28-day PW-CF3 rule
+- draftNotice: Formal 3-4 sentence notice citing the programme entry and PW-CF3 clause
+- responsibleParty: ESB / Eir / Cork City Council / Client / Employer / Landowner (be specific)
 
 Return ONLY valid JSON: { "claims": [...] }
-No preamble, no explanation, no markdown. Just the JSON.`
+No markdown, no explanation. Just the JSON object.`
 
-    // Support multiple programmes passed as an array
-    const programmes: string[] = req.body.programmes ?? (programmeText ? [programmeText] : [])
-    const progContent = programmes.length > 1
-      ? programmes.map((p, i) => `=== PROGRAMME ${i + 1} ===\n${p.slice(0, Math.floor(12000 / programmes.length))}`).join('\n\n')
-      : (programmes[0] ?? '').slice(0, 14000)
+    // Build programme content — split token budget across programmes
+    const maxTokens = 13000
+    const perProg = Math.floor(maxTokens / programmes.length)
+    const progContent = isMulti
+      ? programmes.map((p, i) => `\n=== PROGRAMME ${i + 1} (${['earliest', 'later', 'latest', 'most recent'][Math.min(i, 3)]}) ===\n${p.slice(0, perProg)}`).join('\n')
+      : programmes[0].slice(0, maxTokens)
 
-    const userContent = `${programmes.length > 1
-      ? `You have been given ${programmes.length} programme documents in chronological order. Compare them to identify what has moved, worsened, or remained blocked between versions. Each persistent delay becomes a stronger claim.\n\n`
-      : ''}PROGRAMME DOCUMENT(S):\n${progContent}${contractText ? `\n\nCONTRACT CONTEXT:\n${contractText.slice(0, 2000)}` : ''}${rateContext}`
+    const userContent = [
+      'PROGRAMME DOCUMENT(S):',
+      progContent,
+      contractText ? `\nCONTRACT CONTEXT (key clauses):\n${contractText.slice(0, 2000)}` : '',
+      rateContext,
+    ].filter(Boolean).join('\n')
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -85,14 +105,15 @@ No preamble, no explanation, no markdown. Just the JSON.`
       error?: { message: string }
     }
 
-    if (!response.ok || data.error) throw new Error(data.error?.message ?? 'Analysis failed')
+    if (!response.ok || data.error) throw new Error(data.error?.message ?? 'OpenAI API error')
 
     const content = data.choices?.[0]?.message?.content ?? ''
     const jsonMatch = content.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No claims found in programme')
+    if (!jsonMatch) throw new Error('AI returned no claims — try uploading a different programme file')
 
     const result = JSON.parse(jsonMatch[0]) as { claims?: DelayClaim[] }
     return res.status(200).json({ claims: result.claims ?? [] })
+
   } catch (err: unknown) {
     console.error('Programme analysis error:', err)
     const msg = err instanceof Error ? err.message : 'Analysis failed'
