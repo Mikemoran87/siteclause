@@ -178,7 +178,8 @@ export default function VariationsTab({ projectId, userId }: Props) {
       await load()
       setAnalyseMsg(`✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''}`)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Analysis failed'
+      console.error('Variation analysis error:', err)
+      const msg = err instanceof Error ? err.message : String(err)
       setAnalyseMsg(`❌ ${msg}`)
     }
     setAnalysing(false)
@@ -258,7 +259,8 @@ export default function VariationsTab({ projectId, userId }: Props) {
       await load()
       setProgMsg(`✅ Found ${claims.length} delay claim${claims.length !== 1 ? 's' : ''} from programme`)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Analysis failed'
+      console.error('Programme scan error:', err)
+      const msg = err instanceof Error ? err.message : String(err)
       setProgMsg(`❌ ${msg}`)
     }
     setProgAnalysing(false)

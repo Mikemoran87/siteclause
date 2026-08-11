@@ -249,12 +249,29 @@ export async function saveVariation(
   userId: string,
   input: VariationInput
 ): Promise<Variation> {
+  const row = { ...input, project_id: projectId, user_id: userId }
+
   const { data, error } = await supabase
     .from('variations')
-    .insert({ ...input, project_id: projectId, user_id: userId })
+    .insert(row)
     .select()
     .single()
-  if (error) throw error
+
+  if (error) {
+    // If deadline columns don't exist yet, retry without them
+    if (error.message?.includes('column') || error.code === '42703') {
+      const { claim_date, notice_1_due, notice_1_sent, notice_2_due, notice_2_sent, next_monthly_due, ...safeRow } = row
+      void claim_date; void notice_1_due; void notice_1_sent; void notice_2_due; void notice_2_sent; void next_monthly_due
+      const { data: data2, error: error2 } = await supabase
+        .from('variations')
+        .insert({ ...safeRow, project_id: projectId, user_id: userId })
+        .select()
+        .single()
+      if (error2) throw error2
+      return data2
+    }
+    throw error
+  }
   return data
 }
 
