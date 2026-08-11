@@ -185,30 +185,46 @@ export default function VariationsTab({ projectId, userId }: Props) {
   }
 
   const handleProgrammeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
     setProgAnalysing(true)
     setProgMsg('')
     try {
-      // Parse the file to text
       const { parseFileToText } = await import('../../lib/parseFile')
-      const programmeText = await parseFileToText(file)
 
-      // Get all contract documents for context
+      // Parse all uploaded files
+      const newProgrammes = await Promise.all(files.map(f => parseFileToText(f)))
+
+      // Also get previously saved programmes from contract docs
       const allDocs = await getContracts(projectId)
-      const combinedContractText = allDocs
+      const savedProgrammes = allDocs
+        .filter(c => c.doc_type === 'Programme')
+        .map(c => c.content ?? '')
+        .filter(Boolean)
+
+      // All programmes in one list — saved first (oldest), new ones last
+      const allProgrammes = [...savedProgrammes, ...newProgrammes]
+
+      // Non-programme docs for contract context
+      const contractDocs = allDocs.filter(c => c.doc_type !== 'Programme')
+      const combinedContractText = contractDocs
         .map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`)
         .join('\n\n')
+
       const rates = await getRateCard(projectId)
       const rateContext = rates.length > 0
         ? `\n\nPROJECT RATE CARD:\n${rates.map(r => `- ${r.description}: €${r.rate} per ${r.unit}`).join('\n')}`
         : ''
 
+      const totalProgrammes = allProgrammes.length
+      setProgMsg(`Analysing ${totalProgrammes} programme${totalProgrammes !== 1 ? 's' : ''}…`)
+
       const response = await fetch('/api/analyse-programme', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          programmeText,
+          programmes: allProgrammes,
+          programmeText: allProgrammes[0] ?? '',
           contractText: combinedContractText,
           rateContext,
         }),
@@ -426,10 +442,11 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
             onChange={handleProgrammeUpload}
             className="hidden"
             disabled={progAnalysing}
+            multiple
           />
         </label>
         <p className="text-xs text-blue-700 mt-2 text-center">
-          Upload your 4-week lookahead (PDF or Excel) — AI finds every blocked task and delay event
+          Upload one or more programmes — AI correlates across all of them and compares what's moved
         </p>
       </div>
 

@@ -14,7 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { programmeText, contractText = '', rateContext = '' } = req.body as {
-      programmeText: string
+      programmeText?: string
+      programmes?: string[]
       contractText?: string
       rateContext?: string
     }
@@ -52,7 +53,15 @@ For EACH claim found:
 Return ONLY valid JSON: { "claims": [...] }
 No preamble, no explanation, no markdown. Just the JSON.`
 
-    const userContent = `PROGRAMME DOCUMENT:\n${programmeText.slice(0, 14000)}${contractText ? `\n\nCONTRACT CONTEXT:\n${contractText.slice(0, 2000)}` : ''}${rateContext}`
+    // Support multiple programmes passed as an array
+    const programmes: string[] = req.body.programmes ?? (programmeText ? [programmeText] : [])
+    const progContent = programmes.length > 1
+      ? programmes.map((p, i) => `=== PROGRAMME ${i + 1} ===\n${p.slice(0, Math.floor(12000 / programmes.length))}`).join('\n\n')
+      : (programmes[0] ?? '').slice(0, 14000)
+
+    const userContent = `${programmes.length > 1
+      ? `You have been given ${programmes.length} programme documents in chronological order. Compare them to identify what has moved, worsened, or remained blocked between versions. Each persistent delay becomes a stronger claim.\n\n`
+      : ''}PROGRAMME DOCUMENT(S):\n${progContent}${contractText ? `\n\nCONTRACT CONTEXT:\n${contractText.slice(0, 2000)}` : ''}${rateContext}`
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
