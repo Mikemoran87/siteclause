@@ -250,7 +250,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
         }),
       })
 
-      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }> ; error?: string }
+      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string; claimType?: string; responsibleParty?: string }> ; error?: string }
       if (!response.ok || result.error) throw new Error(result.error ?? 'Analysis failed')
 
       const claims = result.claims ?? []
@@ -268,6 +268,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
           deadline: claim.deadlineStatus,
           notice_drafted: claim.draftNotice ?? '',
           source: 'programme',
+          claim_type: claim.claimType ?? 'Compensation Event',
           claim_date: toDateStr(todayProg),
           notice_1_due: toDateStr(n1),
           notice_1_sent: false,
@@ -277,7 +278,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
         })
       }
       await load()
-      setProgMsg(`✅ Found ${claims.length} delay claim${claims.length !== 1 ? 's' : ''} from ${totalProgrammes} programme${totalProgrammes !== 1 ? 's' : ''}`)
+      setProgMsg(`✅ Found ${claims.length} claim${claims.length !== 1 ? 's' : ''} from ${totalProgrammes} lookahead chart${totalProgrammes !== 1 ? 's' : ''}`)
       setQueuedProgFiles([])
     } catch (err: unknown) {
       console.error('Programme scan error:', err)
@@ -304,7 +305,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
   }
 
   const handleResetProg = async () => {
-    if (!confirm('Clear all Programme Delay claims and start again? This cannot be undone.')) return
+    if (!confirm('Clear all Lookahead Chart claims and start again? This cannot be undone.')) return
     setResettingProg(true)
     await clearVariationsBySource(projectId, 'programme')
     await load()
@@ -475,7 +476,7 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
 
       {/* Programme Upload */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <div className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">📊 Programme Delay Scanner</div>
+        <div className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">📊 Lookahead Chart Analyser</div>
         <p className="text-xs text-blue-700 mb-3">
           Add all your 4-week lookahead programmes, then hit Scan. The AI compares across all versions and finds every blocked task, delay event, and compensation event.
         </p>
@@ -498,7 +499,7 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
 
         {/* Add file button */}
         <label className={`w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-300 text-blue-700 font-bold py-3 rounded-xl text-sm transition-colors min-h-[48px] cursor-pointer hover:bg-blue-50 ${progAnalysing ? 'opacity-60 pointer-events-none' : ''}`}>
-          + Add Programme File{queuedProgFiles.length > 0 ? ' (add more)' : ''}
+          + Add Lookahead Chart{queuedProgFiles.length > 0 ? ' (add more)' : ''}
           <input
             type="file"
             accept=".pdf,.txt,.xlsx,.xls,.csv,.doc,.docx"
@@ -525,7 +526,7 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
                 {progMsg || 'Scanning programmes…'}
               </>
             ) : (
-              `📊 Scan ${queuedProgFiles.length} Programme${queuedProgFiles.length !== 1 ? 's' : ''}`
+              `📊 Scan ${queuedProgFiles.length} Lookahead Chart${queuedProgFiles.length !== 1 ? 's' : ''}`
             )}
           </button>
         )}
@@ -800,7 +801,7 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
             </div>
           )}
 
-          {/* Section 2: Programme Delay Claims */}
+          {/* Section 2: Lookahead Chart Claims */}
           {programmeDelays.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -815,8 +816,11 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
               <div className="space-y-3">
                 {programmeDelays.map((v) => (
                   <div key={v.id} className="bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
-                    <div className="px-3 py-1 bg-blue-50 border-b border-blue-100">
-                      <span className="text-xs text-blue-600 font-semibold">📊 Programme Delay / Compensation Event</span>
+                    <div className="px-3 py-1.5 bg-blue-50 border-b border-blue-100 flex items-center gap-2 flex-wrap">
+                      {v.claim_type === 'Variation Order' && <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">📄 Variation Order</span>}
+                      {v.claim_type === 'Compensation Event' && <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">⏱ Compensation Event</span>}
+                      {v.claim_type === 'Additional Works' && <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">➕ Additional Works</span>}
+                      {!v.claim_type && <span className="text-xs text-blue-600 font-semibold">📊 Lookahead Chart Claim</span>}
                     </div>
                     <div className="px-4 md:px-5 py-4 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">

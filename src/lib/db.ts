@@ -65,6 +65,7 @@ export interface Variation {
   notice_2_sent?: boolean
   next_monthly_due?: string
   source?: string   // 'contract' | 'programme' | 'manual'
+  claim_type?: string  // 'Compensation Event' | 'Variation Order' | 'Additional Works'
   created_at: string
 }
 
@@ -82,6 +83,7 @@ export interface VariationInput {
   notice_2_sent?: boolean
   next_monthly_due?: string
   source?: string
+  claim_type?: string
 }
 
 export interface ChatMessage {
