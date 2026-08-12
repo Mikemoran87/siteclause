@@ -37,11 +37,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors. Be AGGRESSIVE — find EVERY possible entitlement.
 
-${isMulti ? `You have ${programmes.length} programme documents in chronological order. Compare them:
-- Tasks blocked in MULTIPLE programmes = stronger claim (note how many weeks it has persisted)
-- Tasks that got WORSE = escalating claim
-- NEW blocks in later programme = new claim
-Treat each blocked task as a SEPARATE claim even if it appears across multiple programmes.
+${isMulti ? `You have ${programmes.length} programme documents in CHRONOLOGICAL ORDER (earliest first). These are sequential 4-week lookaheads from the same project — Programme 2 continues from Programme 1.
+
+CRITICAL RULES FOR MULTI-PROGRAMME ANALYSIS:
+- These programmes are CUMULATIVE — calculate total delay days from first appearance to last programme
+- A task blocked in BOTH programmes = the delay has persisted — calculate total days from first blocked date to latest programme date
+- Do NOT create duplicate claims for the same delay event — create ONE claim per delay event with the TOTAL duration
+- Tasks NEW in Programme 2 that weren't in Programme 1 = new separate claims
+- Tasks RESOLVED (in Prog 1 but not Prog 2) = no claim needed
+- Change Orders and VOs in either programme = separate VO claims
+- For delay duration: use the date first blocked (from earliest programme) to the date of the latest programme
 
 ` : ''}Each programme row has: ID, Name, Duration, Start, Finish, Resources.
 
