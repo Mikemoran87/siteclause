@@ -225,7 +225,12 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
 
   const parseValue = (val: string): number => {
-    const match = val.replace(/,/g, '').match(/\d+(\.\d+)?/)
+    // Find all € amounts and take the largest (handles "33 days × €5,000 = €165,000")
+    const clean = val.replace(/,/g, '')
+    const euroMatches = [...clean.matchAll(/€(\d+(?:\.\d+)?)/g)].map(m => parseFloat(m[1]))
+    if (euroMatches.length > 0) return Math.max(...euroMatches)
+    // Fallback: first number
+    const match = clean.match(/\d+(\.\d+)?/)
     return match ? parseFloat(match[0]) : 0
   }
   const sumValues = (vs: Variation[]) =>
@@ -244,12 +249,30 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
     <div className="space-y-4 md:space-y-5">
       {/* Summary bar */}
       {variations.length > 0 && (
-        <div className="bg-[#1B4332] text-white rounded-xl p-4 flex items-center justify-between">
-          <span className="text-sm font-semibold text-green-200">{variations.length} variation{variations.length !== 1 ? 's' : ''} tracked</span>
-          {totalValue > 0 && (
-            <span className="font-black text-amber-400 text-base md:text-lg">
-              €{totalValue.toLocaleString()} estimated
-            </span>
+        <div className="bg-[#1B4332] text-white rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-green-200">{variations.length} claim{variations.length !== 1 ? 's' : ''} tracked</span>
+            {totalValue > 0 && (
+              <span className="font-black text-amber-400 text-lg">
+                €{totalValue.toLocaleString()} total
+              </span>
+            )}
+          </div>
+          {(contractTotal + manualTotal > 0 || programmeTotal > 0) && (
+            <div className="flex gap-3 flex-wrap border-t border-green-800 pt-2">
+              {contractTotal + manualTotal > 0 && (
+                <div className="flex flex-col">
+                  <span className="text-xs text-green-300">📄 Variation Orders</span>
+                  <span className="text-sm font-black text-amber-300">€{(contractTotal + manualTotal).toLocaleString()}</span>
+                </div>
+              )}
+              {programmeTotal > 0 && (
+                <div className="flex flex-col">
+                  <span className="text-xs text-green-300">📊 Delay / Compensation</span>
+                  <span className="text-sm font-black text-blue-300">€{programmeTotal.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
