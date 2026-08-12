@@ -82,12 +82,7 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
           next_monthly_due: toDateStr(monthly),
         })
       }
-      const hasProgrammes = allContracts.some(c => c.doc_type === 'Programme')
-      const noRate = rates.length === 0
-      let statusMsg = `✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''}`
-      if (noRate) statusMsg += ' — ⚠️ add day rate in 💰 Rates tab to get £ values'
-      else if (!hasProgrammes) statusMsg += ' — upload lookahead charts in the 📊 scanner below to get accurate valuations'
-      setMsg(statusMsg)
+      setMsg(`✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''}`)
       onComplete()
     } catch (err: unknown) {
       setMsg(`❌ ${err instanceof Error ? err.message : String(err)}`)

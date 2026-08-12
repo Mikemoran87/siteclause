@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { contractText, correspondenceText, rateContext, programmeText } = req.body
+  const { contractText, correspondenceText, rateContext } = req.body
 
   if (!contractText) {
     return res.status(400).json({ error: 'contractText is required' })
@@ -114,9 +114,6 @@ Analyse the documents below and return a JSON object exactly matching this schem
 
 ${rateContext ? `RATE CARD (MANDATORY — use these exact rates to calculate all claim values):
 ${rateContext}
-
-` : ''}${programmeText ? `PROGRAMME / LOOKAHEAD CHARTS (use dates here for accurate valuations):
-${programmeText.slice(0, 60000)}
 
 ` : ''}CONTRACT DOCUMENTS (key sections extracted):
 ${contractContent}
