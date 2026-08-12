@@ -303,6 +303,10 @@ export async function clearVariations(projectId: string): Promise<void> {
   await supabase.from('variations').delete().eq('project_id', projectId)
 }
 
+export async function clearVariationsBySource(projectId: string, source: 'contract' | 'programme'): Promise<void> {
+  await supabase.from('variations').delete().eq('project_id', projectId).eq('source', source)
+}
+
 export async function deleteVariation(variationId: string): Promise<void> {
   const { error } = await supabase.from('variations').delete().eq('id', variationId)
   if (error) throw error

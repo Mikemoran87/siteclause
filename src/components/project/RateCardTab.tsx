@@ -9,19 +9,7 @@ interface Props {
 }
 
 const DEFAULT_RATES: Rate[] = [
-  { category: 'Labour', description: 'General Labourer', unit: 'hr', rate: 38 },
-  { category: 'Labour', description: 'Skilled Operative / Plant Operator', unit: 'hr', rate: 52 },
-  { category: 'Labour', description: 'Foreman / Supervisor', unit: 'hr', rate: 65 },
-  { category: 'Labour', description: 'Project Manager', unit: 'hr', rate: 85 },
-  { category: 'Plant', description: '13t Excavator + operator', unit: 'hr', rate: 85 },
-  { category: 'Plant', description: '20t Excavator + operator', unit: 'hr', rate: 110 },
-  { category: 'Plant', description: 'Dumper 25t + driver', unit: 'hr', rate: 75 },
-  { category: 'Plant', description: 'Compaction Roller + operator', unit: 'hr', rate: 55 },
-  { category: 'Materials', description: 'Concrete C30', unit: 'm³', rate: 195 },
-  { category: 'Materials', description: 'Granular Fill (imported)', unit: 'm³', rate: 22 },
-  { category: 'Materials', description: '150mm PVC Drainage Pipe', unit: 'm', rate: 52 },
-  { category: 'Overhead & Profit', description: 'Overhead & Profit', unit: '%', rate: 15 },
-  { category: 'Other', description: 'Contractor Day Rate (Part 2D — delay claims)', unit: 'day', rate: 0 },
+  { category: 'Other', description: 'Contractor Day Rate (Part 2D — all claims)', unit: 'day', rate: 0 },
 ]
 
 const UNITS = ['hr', 'day', 'week', 'm', 'm²', 'm³', 'no', 't', 'sum', '%']

@@ -182,7 +182,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
           <VariationsTab projectId={projectId} userId={userId} />
         )}
         {activeTab === 'timeline' && (
-          <TimelineTab projectId={projectId} projectName={project?.name} />
+          <TimelineTab key="timeline" projectId={projectId} projectName={project?.name} />
         )}
         {activeTab === 'chat' && (
           <ChatTab projectId={projectId} userId={userId} projectName={project.name} />

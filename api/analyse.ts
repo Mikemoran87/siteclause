@@ -92,7 +92,7 @@ Analyse the documents below and return a JSON object exactly matching this schem
       "severity": "urgent | valid | review",
       "clause": "Relevant contract clause",
       "description": "2-3 sentences explaining the claim and entitlement",
-      "estimatedValue": "Use actual quantities × rates from contract/correspondence. For delay claims use the contractor's tendered day rate from Part 2D if available, otherwise state 'Day rate × days delayed — day rate required from Part 2D of Schedule'",
+      "estimatedValue": "Value ALL claims using the Contractor Day Rate (PW-CF3 Clause 10.6.4 day work method). If day rate is in the rate card, calculate: working days impacted × day rate. Show working e.g. '33 days × €5,000 = €165,000'. Convert calendar days to working days (×0.714). If no day rate available write: 'X working days × Contractor Day Rate (Part 2D)'.",
       "deadlineStatus": "e.g. Notice required within 28 days | EXPIRED — submit immediately",
       "draftNotice": "Full formal notice text referencing the specific clause and event"
     }

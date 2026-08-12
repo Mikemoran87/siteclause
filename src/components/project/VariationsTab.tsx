@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, getContracts, getCorrespondence, getRateCard, getProject } from '../../lib/db'
+import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, clearVariationsBySource, getContracts, getCorrespondence, getRateCard, getProject } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
 
 interface Props {
@@ -103,6 +103,8 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [analyseMsg, setAnalyseMsg] = useState('')
   const [progAnalysing, setProgAnalysing] = useState(false)
   const [progMsg, setProgMsg] = useState('')
+  const [resettingContract, setResettingContract] = useState(false)
+  const [resettingProg, setResettingProg] = useState(false)
   const [projectRates, setProjectRates] = useState<import('../../lib/db').Rate[]>([])
   const [projectName, setProjectName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -276,6 +278,24 @@ export default function VariationsTab({ projectId, userId }: Props) {
     setLoading(false)
   }
 
+  const handleResetContract = async () => {
+    if (!confirm('Clear all Variation Order claims and start again? This cannot be undone.')) return
+    setResettingContract(true)
+    await clearVariationsBySource(projectId, 'contract')
+    await load()
+    setAnalyseMsg('')
+    setResettingContract(false)
+  }
+
+  const handleResetProg = async () => {
+    if (!confirm('Clear all Programme Delay claims and start again? This cannot be undone.')) return
+    setResettingProg(true)
+    await clearVariationsBySource(projectId, 'programme')
+    await load()
+    setProgMsg('')
+    setResettingProg(false)
+  }
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -426,6 +446,15 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
         <p className="text-xs text-amber-700 mt-2 text-center">
           AI reads your contract + correspondence and finds every claim you're entitled to
         </p>
+        {contractVOs.length > 0 && (
+          <button
+            onClick={handleResetContract}
+            disabled={resettingContract}
+            className="w-full mt-2 border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 font-semibold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
+          >
+            {resettingContract ? 'Clearing…' : '🔄 Reset & Start Again'}
+          </button>
+        )}
       </div>
 
       {/* Programme Upload */}
@@ -458,6 +487,15 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
             multiple
           />
         </label>
+        {programmeDelays.length > 0 && (
+          <button
+            onClick={handleResetProg}
+            disabled={resettingProg}
+            className="w-full mt-2 border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 font-semibold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
+          >
+            {resettingProg ? 'Clearing…' : '🔄 Reset & Start Again'}
+          </button>
+        )}
       </div>
 
       <button
