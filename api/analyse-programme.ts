@@ -61,7 +61,7 @@ Find ALL of these:
 For EACH claim:
 - title: Specific name e.g. "ESB.08 Overhead Diversion Delay — Ch440-540 Pouladuff Road"
 - description: What is blocked, who is responsible, when notice was given, how long outstanding${isMulti ? ', which programmes it appears in' : ''}
-- estimatedValue: Use stated figures or estimate: crew days delayed × €800/day. Show working.
+- estimatedValue: Use figures stated in the programme/contract where available. For delay claims: if a day rate is provided in the rate card or contract Schedule, use that rate × number of days delayed (show working). If NO day rate is provided, write: "Day rate (from Part 2D of Schedule) × [X days] delayed". Do NOT invent a day rate.
 - deadlineStatus: "Submit notice immediately" or "Notice required within X days" based on 28-day PW-CF3 rule
 - draftNotice: Formal 3-4 sentence notice citing the programme entry and PW-CF3 clause
 - responsibleParty: ESB / Eir / Cork City Council / Client / Employer / Landowner (be specific)

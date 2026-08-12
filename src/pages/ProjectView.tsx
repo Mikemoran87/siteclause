@@ -164,7 +164,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
           <VariationsTab projectId={projectId} userId={userId} />
         )}
         {activeTab === 'notices' && (
-          <NoticesTab projectId={projectId} />
+          <NoticesTab projectId={projectId} projectName={project?.name} />
         )}
         {activeTab === 'chat' && (
           <ChatTab projectId={projectId} userId={userId} projectName={project.name} />

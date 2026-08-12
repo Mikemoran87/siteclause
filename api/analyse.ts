@@ -12,55 +12,103 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'OpenAI API key not configured on server' })
   }
 
-  const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and contractors by identifying every variation claim they are entitled to, tracking contractual deadlines, and drafting formal notices.
+  // Extract the most relevant sections from a long contract rather than truncating blindly
+  function extractKeyContractSections(text: string, maxChars: number): string {
+    if (text.length <= maxChars) return text
 
-Analyse the following documents and return a JSON object exactly matching this schema — no other text, just the JSON:
+    const keywords = [
+      'variation', 'Variation', 'change order', 'Change Order',
+      'compensation event', 'Compensation Event',
+      'extension of time', 'Extension of Time',
+      'delay', 'Delay', 'notice', 'Notice',
+      'payment', 'Payment', 'valuation', 'Valuation',
+      'bill of quantities', 'Bill of Quantities', 'rate', 'Rate',
+      'day rate', 'Day Rate', 'working day', 'Working Day',
+      'loss and expense', 'Loss and Expense',
+      'dispute', 'Dispute', 'adjudication',
+    ]
+
+    const sections: Array<{ idx: number; text: string }> = []
+    const seen = new Set<number>()
+
+    for (const kw of keywords) {
+      let searchFrom = 0
+      while (searchFrom < text.length) {
+        const idx = text.indexOf(kw, searchFrom)
+        if (idx === -1) break
+        const blockStart = Math.max(0, idx - 200)
+        // Avoid duplicate overlapping blocks
+        if (!seen.has(Math.floor(blockStart / 400))) {
+          seen.add(Math.floor(blockStart / 400))
+          sections.push({ idx: blockStart, text: text.slice(blockStart, blockStart + 600) })
+        }
+        searchFrom = idx + kw.length
+      }
+    }
+
+    // Sort by position, deduplicate, take first N chars
+    sections.sort((a, b) => a.idx - b.idx)
+    let result = ''
+    for (const s of sections) {
+      if (result.length + s.text.length > maxChars) break
+      result += s.text + '\n---\n'
+    }
+    return result || text.slice(0, maxChars)
+  }
+
+  // Use up to 50k chars of contract (key sections) + 20k correspondence
+  const contractContent = extractKeyContractSections(contractText, 50000)
+  const corrContent = correspondenceText ? correspondenceText.slice(0, 20000) : 'No correspondence provided'
+
+  const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in Irish Public Works contracts (PW-CF3, PW-CF1 etc), JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and main contractors by identifying EVERY variation claim and compensation event they are entitled to.
+
+IMPORTANT: Be exhaustive. Do not miss any claim. Each separate event = a separate claim. Look carefully at:
+- Change Orders instructed or implied
+- Compensation Events under PW-CF3 Schedule K (utility diversions, access delays, employer failures)
+- Late instructions, late information, RFI responses outstanding
+- Variations instructed verbally or in writing but not formally valued
+- Out-of-sequence working
+- Acceleration instructions
+- Day rate claims for delay
+- Loss and expense
+
+Analyse the documents below and return a JSON object exactly matching this schema — no other text, just the JSON:
 
 {
-  "projectName": "string — infer from documents or use 'Project'",
-  "contractType": "string — e.g. JCT Subcontract 2016, NEC4, RIAI etc",
-  "totalClaimValue": "string — formatted total e.g. '€126,900' or 'Est. €45,000-€60,000'",
-  "summary": "string — 2-3 sentence plain English summary of the key findings for the contractor",
+  "projectName": "string",
+  "contractType": "string — e.g. PW-CF3 v2.8, JCT Subcontract 2016 etc",
+  "totalClaimValue": "string — formatted total",
+  "summary": "string — 2-3 sentences",
   "claims": [
     {
       "id": "VC-001",
       "title": "Short descriptive title",
       "severity": "urgent | valid | review",
-      "clause": "Relevant contract clause e.g. Cl. 5.1",
-      "description": "2-3 sentences explaining the claim, the event that gave rise to it, and why the contractor is entitled",
-      "estimatedValue": "e.g. Est. €34,200",
-      "deadlineStatus": "e.g. 7 days remaining to submit notice | EXPIRED - submit immediately",
-      "draftNotice": "Full formal variation/delay notice text ready to send, addressed to the main contractor, referencing the specific clause and event"
+      "clause": "Relevant contract clause",
+      "description": "2-3 sentences explaining the claim and entitlement",
+      "estimatedValue": "Use actual quantities × rates from contract/correspondence. For delay claims use the contractor's tendered day rate from Part 2D if available, otherwise state 'Day rate × days delayed — day rate required from Part 2D of Schedule'",
+      "deadlineStatus": "e.g. Notice required within 28 days | EXPIRED — submit immediately",
+      "draftNotice": "Full formal notice text referencing the specific clause and event"
     }
   ],
   "deadlines": [
     {
-      "clause": "e.g. Cl. 4.3",
-      "description": "e.g. Monthly Payment Application",
+      "clause": "e.g. Cl. 10.1",
+      "description": "e.g. Compensation Event notice — 28 days from event",
       "status": "on-track | urgent | expired"
     }
   ]
 }
 
-Rules:
-- severity "urgent" = deadline expired or expiring within 5 days
-- severity "valid" = clear entitlement, deadline still open
-- severity "review" = potential entitlement but needs more evidence
-- Be specific and cite actual dates, amounts, and clause numbers where possible
-- Draft notices must be formal, professional, and legally precise
-- If contract type cannot be determined, use standard construction contract principles
-- Always find at least 2-3 claims if there is any correspondence showing extra work, delays, or changes
-
-CONTRACT:
-${contractText.slice(0, 8000)}
+CONTRACT DOCUMENTS (key sections extracted):
+${contractContent}
 
 SITE CORRESPONDENCE:
-${correspondenceText ? correspondenceText.slice(0, 8000) : 'No correspondence provided'}`
+${corrContent}`
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -74,19 +122,21 @@ ${correspondenceText ? correspondenceText.slice(0, 8000) : 'No correspondence pr
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.2,
+        max_tokens: 6000,
       }),
     })
 
     if (!response.ok) {
-      const err = await response.json()
+      const err = await response.json() as { error?: { message: string } }
       return res.status(500).json({ error: err.error?.message || 'OpenAI API error' })
     }
 
-    const data = await response.json()
-    const result = JSON.parse(data.choices[0].message.content)
+    const data = await response.json() as { choices: Array<{ message: { content: string } }> }
+    const result = JSON.parse(data.choices[0].message.content) as Record<string, unknown>
     result.contractText = contractText.slice(0, 12000)
     return res.status(200).json(result)
-  } catch (e: any) {
-    return res.status(500).json({ error: e.message || 'Server error' })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Server error'
+    return res.status(500).json({ error: msg })
   }
 }
