@@ -21,9 +21,10 @@ const DEFAULT_RATES: Rate[] = [
   { category: 'Materials', description: 'Granular Fill (imported)', unit: 'm³', rate: 22 },
   { category: 'Materials', description: '150mm PVC Drainage Pipe', unit: 'm', rate: 52 },
   { category: 'Overhead & Profit', description: 'Overhead & Profit', unit: '%', rate: 15 },
+  { category: 'Other', description: 'Contractor Day Rate (Part 2D — delay claims)', unit: 'day', rate: 0 },
 ]
 
-const UNITS = ['hr', 'm', 'm²', 'm³', 'no', 't', 'sum', '%']
+const UNITS = ['hr', 'day', 'week', 'm', 'm²', 'm³', 'no', 't', 'sum', '%']
 const CATEGORIES = ['Labour', 'Plant', 'Materials', 'Subcontract', 'Overhead & Profit', 'Other']
 
 function parseSpreadsheetToRates(file: File): Promise<Rate[] | null> {
