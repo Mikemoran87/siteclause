@@ -64,6 +64,7 @@ export interface Variation {
   notice_2_due?: string
   notice_2_sent?: boolean
   next_monthly_due?: string
+  source?: string   // 'contract' | 'programme' | 'manual'
   created_at: string
 }
 
@@ -80,6 +81,7 @@ export interface VariationInput {
   notice_2_due?: string
   notice_2_sent?: boolean
   next_monthly_due?: string
+  source?: string
 }
 
 export interface ChatMessage {

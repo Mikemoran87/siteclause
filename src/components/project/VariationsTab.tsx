@@ -167,6 +167,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
           status: 'Draft',
           deadline: claim.deadlineStatus,
           notice_drafted: claim.draftNotice ?? '',
+          source: 'contract',
           claim_date: toDateStr(today),
           notice_1_due: toDateStr(notice1Due),
           notice_1_sent: false,
@@ -248,6 +249,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
           status: 'Draft',
           deadline: claim.deadlineStatus,
           notice_drafted: claim.draftNotice ?? '',
+          source: 'programme',
           claim_date: toDateStr(todayProg),
           notice_1_due: toDateStr(n1),
           notice_1_sent: false,
@@ -370,15 +372,20 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
 
   const parseValue = (val: string): number => {
-    // Extract first number with optional comma separators: e.g. "Est. €10,000" → 10000
     const match = val.replace(/,/g, '').match(/\d+(\.\d+)?/)
     return match ? parseFloat(match[0]) : 0
   }
-  const totalValue = variations
-    .filter(v => v.value)
-    .map(v => parseValue(v.value ?? ''))
-    .filter(n => n > 0)
-    .reduce((a, b) => a + b, 0)
+  const sumValues = (vs: Variation[]) =>
+    vs.filter(v => v.value).map(v => parseValue(v.value ?? '')).filter(n => n > 0).reduce((a, b) => a + b, 0)
+
+  const contractVOs = variations.filter(v => v.source === 'contract')
+  const programmeDelays = variations.filter(v => v.source === 'programme')
+  const manualVOs = variations.filter(v => !v.source || v.source === 'manual')
+
+  const totalValue = sumValues(variations)
+  const contractTotal = sumValues(contractVOs)
+  const programmeTotal = sumValues(programmeDelays)
+  const manualTotal = sumValues(manualVOs)
 
   return (
     <div className="space-y-4 md:space-y-5">
@@ -464,11 +471,25 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
           <div className="text-4xl mb-3">📋</div>
           <h3 className="font-bold text-gray-700 mb-1">No variations yet</h3>
-          <p className="text-sm text-gray-400">Track every variation claim — value, status, and deadline.</p>
+          <p className="text-sm text-gray-400">Use the buttons above to find claims from your contract, correspondence, or programmes.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {variations.map((v) => (
+        <div className="space-y-6">
+
+          {/* Section 1: Contract & Correspondence VOs */}
+          {(contractVOs.length > 0 || manualVOs.length > 0) && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-black text-gray-900 text-sm">📄 Variation Orders — Contract & Correspondence</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Found from your subcontract, emails and WhatsApp</p>
+                </div>
+                {contractTotal + manualTotal > 0 && (
+                  <span className="font-black text-amber-600 text-sm">€{(contractTotal + manualTotal).toLocaleString()}</span>
+                )}
+              </div>
+              <div className="space-y-3">
+                {[...contractVOs, ...manualVOs].map((v) => (
             <div key={v.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-4 md:px-5 py-4 flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -694,6 +715,93 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
               )}
             </div>
           ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 2: Programme Delay Claims */}
+          {programmeDelays.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-black text-gray-900 text-sm">📊 Delay Claims — Programme Analysis</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Found from your 4-week lookahead programme(s) — compensation events and EOT claims</p>
+                </div>
+                {programmeTotal > 0 && (
+                  <span className="font-black text-blue-600 text-sm">€{programmeTotal.toLocaleString()}</span>
+                )}
+              </div>
+              <div className="space-y-3">
+                {programmeDelays.map((v) => (
+                  <div key={v.id} className="bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+                    <div className="px-3 py-1 bg-blue-50 border-b border-blue-100">
+                      <span className="text-xs text-blue-600 font-semibold">📊 Programme Delay / Compensation Event</span>
+                    </div>
+                    <div className="px-4 md:px-5 py-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[v.status] ?? 'bg-gray-100 text-gray-600'}`}>{v.status}</span>
+                          {editingId === v.id ? (
+                            <input type="number" value={editValue} onChange={e => setEditValue(e.target.value)} className="text-blue-600 font-bold text-sm border border-blue-300 rounded px-2 py-0.5 w-28 focus:outline-none" onClick={e => e.stopPropagation()} />
+                          ) : (
+                            v.value && <span className="text-blue-600 font-bold text-sm">{v.value}</span>
+                          )}
+                        </div>
+                        {editingId === v.id ? (
+                          <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className="font-semibold text-gray-900 text-sm border border-gray-300 rounded px-2 py-1 w-full focus:outline-none" onClick={e => e.stopPropagation()} />
+                        ) : (
+                          <div className="font-semibold text-gray-900 text-sm">{v.title || 'Untitled delay claim'}</div>
+                        )}
+                        {v.deadline && <div className="text-xs text-red-500 mt-0.5">⏰ {v.deadline}</div>}
+                        {v.notice_1_due && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <DeadlineBadge label="Notice 1" due={v.notice_1_due} sent={v.notice_1_sent} onMarkSent={() => handleMarkSent(v.id, 'notice_1')} />
+                            {v.notice_2_due && <DeadlineBadge label="Notice 2" due={v.notice_2_due} sent={v.notice_2_sent} onMarkSent={() => handleMarkSent(v.id, 'notice_2')} />}
+                            {v.next_monthly_due && <DeadlineBadge label="Monthly" due={v.next_monthly_due} sent={false} onMarkSent={() => handleRollMonthly(v.id, v.next_monthly_due!)} />}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
+                        {editingId !== v.id && (
+                          <select value={v.status} onChange={e => handleStatusChange(v.id, e.target.value)} className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 min-h-[36px]">
+                            {STATUSES.map(s => <option key={s}>{s}</option>)}
+                          </select>
+                        )}
+                        {editingId === v.id ? (
+                          <>
+                            <button onClick={() => handleSaveAdjust(v.id)} className="text-xs text-white bg-[#1B4332] rounded-lg px-2.5 py-2 min-h-[44px] font-semibold">Save</button>
+                            <button onClick={() => setEditingId(null)} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-2 min-h-[44px]">Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setExpanded(expanded === v.id ? null : v.id)} className="text-xs text-blue-600 font-semibold border border-blue-200 rounded-lg px-2.5 py-2 min-h-[44px]">{expanded === v.id ? 'Hide' : 'Details'}</button>
+                            <button onClick={() => handleStartAdjust(v)} className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2.5 py-2 min-h-[44px]">Adjust</button>
+                            <button onClick={() => handleDelete(v.id)} className="text-xs text-red-400 border border-red-200 rounded-lg px-2.5 py-2 min-h-[44px]">Del</button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {expanded === v.id && (
+                      <div className="border-t border-blue-50 px-4 md:px-5 py-4 space-y-3">
+                        {v.description && <p className="text-sm text-gray-700">{v.description}</p>}
+                        {v.notice_drafted && (
+                          <div>
+                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Draft Notice</div>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 font-serif text-sm text-gray-700 whitespace-pre-wrap">{v.notice_drafted}</div>
+                            <div className="mt-2 flex gap-2">
+                              <button onClick={() => navigator.clipboard.writeText(v.notice_drafted ?? '')} className="text-xs text-blue-700 border border-blue-300 rounded-lg px-3 py-2 min-h-[44px]">📋 Copy</button>
+                              <button onClick={() => { const s = encodeURIComponent(`Compensation Event Notice — ${v.title}${projectName ? ` — ${projectName}` : ''}`); const b = encodeURIComponent(v.notice_drafted ?? ''); window.open(`mailto:?subject=${s}&body=${b}`, '_blank') }} className="text-xs text-white bg-blue-600 hover:bg-blue-500 rounded-lg px-3 py-2 min-h-[44px] gap-1 flex items-center">✉️ Send Email</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
