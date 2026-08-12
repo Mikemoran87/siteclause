@@ -18,6 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Extract the most relevant sections from a long contract rather than truncating blindly
   function extractKeyContractSections(text: string, maxChars: number): string {
+    // GPT-4o supports 128k tokens (~480k chars) — use generously
     if (text.length <= maxChars) return text
 
     const keywords = [
@@ -61,8 +62,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Use up to 50k chars of contract (key sections) + 20k correspondence
-  const contractContent = extractKeyContractSections(contractText, 50000)
-  const corrContent = correspondenceText ? correspondenceText.slice(0, 20000) : 'No correspondence provided'
+  // GPT-4o: 128k tokens. Use up to 200k chars contract + 80k correspondence
+  const contractContent = extractKeyContractSections(contractText, 200000)
+  const corrContent = correspondenceText ? correspondenceText.slice(0, 80000) : 'No correspondence provided'
 
   const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in Irish Public Works contracts (PW-CF3, PW-CF1 etc), JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and main contractors by identifying EVERY variation claim and compensation event they are entitled to.
 
@@ -122,7 +124,7 @@ ${corrContent}`
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
         temperature: 0.2,
-        max_tokens: 6000,
+        max_tokens: 8000,
       }),
     })
 

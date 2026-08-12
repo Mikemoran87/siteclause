@@ -70,7 +70,8 @@ Return ONLY valid JSON: { "claims": [...] }
 No markdown, no explanation. Just the JSON object.`
 
     // Build programme content — split token budget across programmes
-    const maxTokens = 13000
+    // GPT-4o 128k context — use up to 200k chars for programmes + 50k for contract
+    const maxTokens = 200000
     const perProg = Math.floor(maxTokens / programmes.length)
     const progContent = isMulti
       ? programmes.map((p, i) => `\n=== PROGRAMME ${i + 1} (${['earliest', 'later', 'latest', 'most recent'][Math.min(i, 3)]}) ===\n${p.slice(0, perProg)}`).join('\n')
@@ -79,7 +80,7 @@ No markdown, no explanation. Just the JSON object.`
     const userContent = [
       'PROGRAMME DOCUMENT(S):',
       progContent,
-      contractText ? `\nCONTRACT CONTEXT (key clauses):\n${contractText.slice(0, 2000)}` : '',
+      contractText ? `\nCONTRACT CONTEXT (key clauses):\n${contractText.slice(0, 50000)}` : '',
       rateContext,
     ].filter(Boolean).join('\n')
 
@@ -96,7 +97,7 @@ No markdown, no explanation. Just the JSON object.`
           { role: 'user', content: userContent },
         ],
         temperature: 0.2,
-        max_tokens: 6000,
+        max_tokens: 8000,
       }),
     })
 

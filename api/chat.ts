@@ -34,7 +34,7 @@ Your job is to help contractors and subcontractors understand their rights, obli
 - Always add a brief disclaimer at the end: "Note: This is AI-generated guidance, not legal advice."
 
 CONTRACT:
-${contractText ? contractText.slice(0, 10000) : 'No contract loaded'}`
+${contractText ? contractText.slice(0, 150000) : 'No contract loaded'}`
           },
           ...messages
         ],
