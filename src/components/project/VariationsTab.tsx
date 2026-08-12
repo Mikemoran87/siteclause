@@ -225,8 +225,8 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
 
   const parseValue = (val: string): number => {
-    // Find all € amounts and take the largest (handles "33 days × €5,000 = €165,000")
-    const clean = val.replace(/,/g, '')
+    // Normalise EUR -> € then find all amounts, take the largest
+    const clean = val.replace(/,/g, '').replace(/EUR(\d)/g, '€$1').replace(/EUR\s/g, '€')
     const euroMatches = [...clean.matchAll(/€(\d+(?:\.\d+)?)/g)].map(m => parseFloat(m[1]))
     if (euroMatches.length > 0) return Math.max(...euroMatches)
     // Fallback: first number

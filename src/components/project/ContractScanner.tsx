@@ -30,36 +30,67 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
 
   const handleAnalyse = async () => {
     setAnalysing(true)
-    setMsg('')
+    setMsg('Reading contract, correspondence and programmes…')
     try {
-      const allContracts = await getContracts(projectId)
-      if (allContracts.length === 0) throw new Error('No contract uploaded — upload a contract in the Contract tab first')
+      const allDocs = await getContracts(projectId)
+      if (allDocs.length === 0) throw new Error('No contract uploaded — upload a contract in the Contract tab first')
 
-      const contractText = allContracts
+      // Separate contract docs from programme docs
+      const contractDocs = allDocs.filter(c => c.doc_type !== 'Programme')
+      const programmeDocs = allDocs.filter(c => c.doc_type === 'Programme')
+
+      const contractText = contractDocs
         .map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`)
         .join('\n\n')
+
+      // Pass programmes separately — API uses dates for valuation
+      const programmes = programmeDocs
+        .map(c => c.content ?? '')
+        .filter(Boolean)
 
       const corrItems = await getCorrespondence(projectId)
       const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
 
       const rates = await getRateCard(projectId)
       const rateContext = rates.length > 0
-        ? `PROJECT RATE CARD — use these exact rates:\n${rates.map(r => `- ${r.description}: €${r.rate} per ${r.unit}`).join('\n')}`
+        ? rates.map(r => `- ${r.description}: ${r.rate} per ${r.unit}`).join('\n')
         : ''
 
-      const response = await fetch('/api/analyse', {
+      if (rates.length === 0) {
+        setMsg('⚠️ No day rate saved — go to 💰 Rates tab and add your day rate first for accurate values')
+        setAnalysing(false)
+        return
+      }
+
+      if (programmes.length === 0) {
+        setMsg('⚠️ No lookahead charts uploaded — upload programmes in Contract tab (type: Programme) for accurate valuations')
+      } else {
+        setMsg(`Analysing contract + ${programmes.length} programme${programmes.length !== 1 ? 's' : ''}…`)
+      }
+
+      const response = await fetch('/api/analyse-combined', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractText, correspondenceText, rateContext }),
+        body: JSON.stringify({ contractText, correspondenceText, programmes, rateContext }),
       })
+
       const result = await response.json() as {
-        claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }>
+        claims?: Array<{
+          title: string
+          claimType?: string
+          description: string
+          estimatedValue: string
+          deadlineStatus: string
+          draftNotice: string
+        }>
         error?: string
       }
+
       if (!response.ok || result.error) throw new Error(result.error ?? `Server error ${response.status}`)
 
       const claims = result.claims ?? []
       await clearVariationsBySource(projectId, 'contract')
+
       const today = new Date()
       for (const claim of claims) {
         const n1 = addWorkingDays(today, 20)
@@ -74,6 +105,7 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
           deadline: claim.deadlineStatus,
           notice_drafted: claim.draftNotice ?? '',
           source: 'contract',
+          claim_type: claim.claimType ?? 'Compensation Event',
           claim_date: toDateStr(today),
           notice_1_due: toDateStr(n1),
           notice_1_sent: false,
@@ -82,7 +114,8 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
           next_monthly_due: toDateStr(monthly),
         })
       }
-      setMsg(`✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''}`)
+
+      setMsg(`✅ Found ${claims.length} claim${claims.length !== 1 ? 's' : ''}${programmes.length > 0 ? ` — valued from ${programmes.length} programme${programmes.length !== 1 ? 's' : ''}` : ''}`)
       onComplete()
     } catch (err: unknown) {
       setMsg(`❌ ${err instanceof Error ? err.message : String(err)}`)
@@ -101,9 +134,11 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
 
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-      <div className="text-xs font-bold text-amber-800 uppercase tracking-wide">📄 Contract & Correspondence Scanner</div>
-      <p className="text-xs text-amber-700">AI reads your contract + all correspondence and finds every Variation Order, Compensation Event, and claim you're entitled to.</p>
-      {msg && <p className="text-sm font-semibold text-gray-700">{msg}</p>}
+      <div className="text-xs font-bold text-amber-800 uppercase tracking-wide">📄 Contract, Correspondence & Programme Scanner</div>
+      <p className="text-xs text-amber-700">
+        Reads your contract, correspondence, and any uploaded lookahead charts together — finds every claim and values it from actual programme dates.
+      </p>
+      {msg && <p className="text-sm font-semibold text-gray-700 whitespace-pre-wrap">{msg}</p>}
       <button
         onClick={handleAnalyse}
         disabled={analysing}
@@ -111,7 +146,7 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
       >
         {analysing ? (
           <><svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Analysing…</>
-        ) : '🔍 Find Variation Claims'}
+        ) : '🔍 Find All Claims & Values'}
       </button>
       {contractVOCount > 0 && (
         <button onClick={handleReset} disabled={resetting}
