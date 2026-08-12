@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, clearVariations, clearVariationsBySource, getContracts, getCorrespondence, getRateCard, getProject } from '../../lib/db'
+import { getVariations, saveVariation, updateVariation, updateVariationStatus, deleteVariation, getRateCard, getProject } from '../../lib/db'
 import type { Variation, VariationInput } from '../../lib/db'
+import ContractScanner from './ContractScanner'
+import LookaheadScanner from './LookaheadScanner'
 
 interface Props {
   projectId: string
@@ -99,14 +101,6 @@ export default function VariationsTab({ projectId, userId }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showCalc, setShowCalc] = useState<string | null>(null)
   const [calc, setCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
-  const [analysing, setAnalysing] = useState(false)
-  const [analyseMsg, setAnalyseMsg] = useState('')
-  const [progAnalysing, setProgAnalysing] = useState(false)
-  const [progMsg, setProgMsg] = useState('')
-  const [resettingContract, setResettingContract] = useState(false)
-  const [resettingProg, setResettingProg] = useState(false)
-  const [queuedProgFiles, setQueuedProgFiles] = useState<File[]>([])
-  const [projectRates, setProjectRates] = useState<import('../../lib/db').Rate[]>([])
   const [projectName, setProjectName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -120,197 +114,19 @@ export default function VariationsTab({ projectId, userId }: Props) {
     notice_drafted: '',
   })
   const [formCalc, setFormCalc] = useState<CostCalc>({ labourHours: '', labourRate: '', materials: '', overhead: '15' })
+  const [projectRates, setProjectRates] = useState<import('../../lib/db').Rate[]>([])
 
   useEffect(() => {
     load()
-    getRateCard(projectId).then(setProjectRates)
+    getRateCard(projectId).then(rates => setProjectRates(rates))
     getProject(projectId).then(p => { if (p) setProjectName(p.name) })
   }, [projectId])
-
-  const handleAnalyse = async () => {
-    setAnalysing(true)
-    setAnalyseMsg('')
-    try {
-      const allContracts = await getContracts(projectId)
-      if (allContracts.length === 0) throw new Error('No contract uploaded yet — please upload a contract first')
-      // Combine all contract documents with labels
-      const contractText = allContracts
-        .map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`)
-        .join('\n\n')
-      const corrItems = await getCorrespondence(projectId)
-      const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
-
-      // Include rate card so AI uses project-specific rates
-      const rates = await getRateCard(projectId)
-      const rateContext = rates.length > 0
-        ? `\n\nPROJECT RATE CARD (use these rates when calculating variation values):\n` +
-          rates.map(r => `- ${r.category} / ${r.description}: €${r.rate} per ${r.unit}`).join('\n')
-        : ''
-
-      const response = await fetch('/api/analyse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractText, correspondenceText, rateContext }),
-      })
-      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }>; error?: string }
-      if (!response.ok || result.error) throw new Error(result.error ?? `Server error ${response.status}`)
-      const claims = result.claims ?? []
-      // Clear existing AI-found variations before saving fresh results
-      await clearVariations(projectId)
-      const today = new Date()
-      for (const claim of claims) {
-        const notice1Due = addWorkingDays(today, 20)
-        const notice2Due = addWorkingDays(notice1Due, 20)
-        const monthlyDue = new Date(today)
-        monthlyDue.setMonth(monthlyDue.getMonth() + 1)
-        await saveVariation(projectId, userId, {
-          title: claim.title,
-          description: claim.description,
-          value: claim.estimatedValue,
-          status: 'Draft',
-          deadline: claim.deadlineStatus,
-          notice_drafted: claim.draftNotice ?? '',
-          source: 'contract',
-          claim_date: toDateStr(today),
-          notice_1_due: toDateStr(notice1Due),
-          notice_1_sent: false,
-          notice_2_due: toDateStr(notice2Due),
-          notice_2_sent: false,
-          next_monthly_due: toDateStr(monthlyDue),
-        })
-      }
-      await load()
-      setAnalyseMsg(`✅ Found ${claims.length} variation claim${claims.length !== 1 ? 's' : ''}`)
-    } catch (err: unknown) {
-      console.error('Variation analysis error:', err)
-      const msg = err instanceof Error ? err.message : String(err)
-      setAnalyseMsg(`❌ ${msg}`)
-    }
-    setAnalysing(false)
-  }
-
-    const handleProgrammeQueue = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (!files.length) return
-    setQueuedProgFiles(prev => {
-      const existing = new Set(prev.map(f => f.name))
-      const newFiles = files.filter(f => !existing.has(f.name))
-      return [...prev, ...newFiles]
-    })
-    setProgMsg('')
-    e.target.value = ''
-  }
-
-  const handleRemoveQueuedFile = (name: string) => {
-    setQueuedProgFiles(prev => prev.filter(f => f.name !== name))
-  }
-
-  const handleProgrammeScan = async () => {
-    if (!queuedProgFiles.length) return
-    setProgAnalysing(true)
-    setProgMsg('')
-    try {
-      const { parseFileToText } = await import('../../lib/parseFile')
-
-      // Parse all queued files
-      const newProgrammes = await Promise.all(queuedProgFiles.map(f => parseFileToText(f)))
-
-      // Also get previously saved programmes from contract docs
-      const allDocs = await getContracts(projectId)
-      const savedProgrammes = allDocs
-        .filter(c => c.doc_type === 'Programme')
-        .map(c => c.content ?? '')
-        .filter(Boolean)
-
-      // All programmes in one list — saved first (oldest), new ones last
-      const allProgrammes = [...savedProgrammes, ...newProgrammes]
-
-      // Non-programme docs for contract context
-      const contractDocs = allDocs.filter(c => c.doc_type !== 'Programme')
-      const combinedContractText = contractDocs
-        .map(c => `=== ${c.doc_type ?? 'Document'}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`)
-        .join('\n\n')
-
-      const rates = await getRateCard(projectId)
-      const rateContext = rates.length > 0
-        ? `\n\nPROJECT RATE CARD:\n${rates.map(r => `- ${r.description}: €${r.rate} per ${r.unit}`).join('\n')}`
-        : ''
-
-      const totalProgrammes = allProgrammes.length
-      setProgMsg(`Analysing ${totalProgrammes} programme${totalProgrammes !== 1 ? 's' : ''}…`)
-
-      const response = await fetch('/api/analyse-programme', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          programmes: allProgrammes,
-          programmeText: allProgrammes[0] ?? '',
-          contractText: combinedContractText,
-          rateContext,
-        }),
-      })
-
-      const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string; claimType?: string; responsibleParty?: string }> ; error?: string }
-      if (!response.ok || result.error) throw new Error(result.error ?? 'Analysis failed')
-
-      const claims = result.claims ?? []
-      const todayProg = new Date()
-      for (const claim of claims) {
-        const n1 = addWorkingDays(todayProg, 20)
-        const n2 = addWorkingDays(n1, 20)
-        const monthly = new Date(todayProg)
-        monthly.setMonth(monthly.getMonth() + 1)
-        await saveVariation(projectId, userId, {
-          title: claim.title,
-          description: claim.description,
-          value: claim.estimatedValue,
-          status: 'Draft',
-          deadline: claim.deadlineStatus,
-          notice_drafted: claim.draftNotice ?? '',
-          source: 'programme',
-          claim_type: claim.claimType ?? 'Compensation Event',
-          claim_date: toDateStr(todayProg),
-          notice_1_due: toDateStr(n1),
-          notice_1_sent: false,
-          notice_2_due: toDateStr(n2),
-          notice_2_sent: false,
-          next_monthly_due: toDateStr(monthly),
-        })
-      }
-      await load()
-      setProgMsg(`✅ Found ${claims.length} claim${claims.length !== 1 ? 's' : ''} from ${totalProgrammes} lookahead chart${totalProgrammes !== 1 ? 's' : ''}`)
-      setQueuedProgFiles([])
-    } catch (err: unknown) {
-      console.error('Programme scan error:', err)
-      const msg = err instanceof Error ? err.message : String(err)
-      setProgMsg(`❌ ${msg}`)
-    }
-    setProgAnalysing(false)
-  }
 
   const load = async () => {
     setLoading(true)
     const data = await getVariations(projectId)
     setVariations(data)
     setLoading(false)
-  }
-
-  const handleResetContract = async () => {
-    if (!confirm('Clear all Variation Order claims and start again? This cannot be undone.')) return
-    setResettingContract(true)
-    await clearVariationsBySource(projectId, 'contract')
-    await load()
-    setAnalyseMsg('')
-    setResettingContract(false)
-  }
-
-  const handleResetProg = async () => {
-    if (!confirm('Clear all Lookahead Chart claims and start again? This cannot be undone.')) return
-    setResettingProg(true)
-    await clearVariationsBySource(projectId, 'programme')
-    await load()
-    setProgMsg('')
-    setResettingProg(false)
   }
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -438,109 +254,19 @@ Write a short formal notice (3-4 sentences) that the subcontractor sends to the 
         </div>
       )}
 
-      {/* Find Variations Button */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        {analyseMsg && (
-          <p className="text-sm font-semibold mb-3 text-gray-700">{analyseMsg}</p>
-        )}
-        <button
-          onClick={handleAnalyse}
-          disabled={analysing}
-          className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] flex items-center justify-center gap-2"
-        >
-          {analysing ? (
-            <>
-              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-              Analysing contract and correspondence…
-            </>
-          ) : (
-            '🔍 Find Variation Claims'
-          )}
-        </button>
-        <p className="text-xs text-amber-700 mt-2 text-center">
-          AI reads your contract + correspondence and finds every claim you're entitled to
-        </p>
-        {contractVOs.length > 0 && (
-          <button
-            onClick={handleResetContract}
-            disabled={resettingContract}
-            className="w-full mt-2 border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 font-semibold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
-          >
-            {resettingContract ? 'Clearing…' : '🔄 Reset & Start Again'}
-          </button>
-        )}
-      </div>
+      <ContractScanner
+        projectId={projectId}
+        userId={userId}
+        contractVOCount={contractVOs.length}
+        onComplete={load}
+      />
 
-      {/* Programme Upload */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <div className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">📊 Lookahead Chart Analyser</div>
-        <p className="text-xs text-blue-700 mb-3">
-          Add all your 4-week lookahead programmes, then hit Scan. The AI compares across all versions and finds every blocked task, delay event, and compensation event.
-        </p>
-
-        {/* Queued files list */}
-        {queuedProgFiles.length > 0 && (
-          <div className="mb-3 space-y-1.5">
-            {queuedProgFiles.map(f => (
-              <div key={f.name} className="flex items-center justify-between bg-blue-100 rounded-lg px-3 py-2">
-                <span className="text-xs font-semibold text-blue-800 truncate">{f.name}</span>
-                <button onClick={() => handleRemoveQueuedFile(f.name)} className="text-blue-500 hover:text-red-500 text-lg ml-2 leading-none">×</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {progMsg && (
-          <p className="text-sm font-semibold mb-3 text-gray-700">{progMsg}</p>
-        )}
-
-        {/* Add file button */}
-        <label className={`w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-300 text-blue-700 font-bold py-3 rounded-xl text-sm transition-colors min-h-[48px] cursor-pointer hover:bg-blue-50 ${progAnalysing ? 'opacity-60 pointer-events-none' : ''}`}>
-          + Add Lookahead Chart{queuedProgFiles.length > 0 ? ' (add more)' : ''}
-          <input
-            type="file"
-            accept=".pdf,.txt,.xlsx,.xls,.csv,.doc,.docx"
-            onChange={handleProgrammeQueue}
-            className="hidden"
-            disabled={progAnalysing}
-            multiple
-          />
-        </label>
-
-        {/* Scan button — only shown when files queued */}
-        {queuedProgFiles.length > 0 && (
-          <button
-            onClick={handleProgrammeScan}
-            disabled={progAnalysing}
-            className="w-full mt-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] flex items-center justify-center gap-2"
-          >
-            {progAnalysing ? (
-              <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-                {progMsg || 'Scanning programmes…'}
-              </>
-            ) : (
-              `📊 Scan ${queuedProgFiles.length} Lookahead Chart${queuedProgFiles.length !== 1 ? 's' : ''}`
-            )}
-          </button>
-        )}
-
-        {programmeDelays.length > 0 && (
-          <button
-            onClick={handleResetProg}
-            disabled={resettingProg}
-            className="w-full mt-2 border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 font-semibold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
-          >
-            {resettingProg ? 'Clearing…' : '🔄 Reset & Start Again'}
-          </button>
-        )}
-      </div>
+      <LookaheadScanner
+        projectId={projectId}
+        userId={userId}
+        progClaimCount={programmeDelays.length}
+        onComplete={load}
+      />
 
       <button
         onClick={() => setShowAdd(true)}
