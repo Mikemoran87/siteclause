@@ -1,13 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-interface Claim {
+// AI extracts FACTS ONLY — no calculations, no values
+// All maths is done deterministically in the frontend
+export interface ClaimEvent {
   title: string
-  claimType: string
+  claimType: 'Compensation Event' | 'Variation Order' | 'Additional Works'
   description: string
-  estimatedValue: string
+  blockedFrom: string | null   // ISO date string YYYY-MM-DD or null if unknown
+  blockedTo: string | null     // ISO date string YYYY-MM-DD or null if still ongoing
+  stillOngoing: boolean        // true if task still blocked in latest programme
+  missingData: string | null   // what data is needed to calculate value
   deadlineStatus: string
   draftNotice: string
   responsibleParty: string
+  programmeRef: string         // e.g. "Task ID 9, Programme 1 & 2"
+  clauseRef: string            // e.g. "PW-CF3 Cl. 10.3"
 }
 
 function extractKeyContractSections(text: string, maxChars: number): string {
@@ -15,8 +22,8 @@ function extractKeyContractSections(text: string, maxChars: number): string {
   const keywords = [
     'variation', 'Variation', 'change order', 'Change Order',
     'compensation event', 'Compensation Event', 'delay', 'Delay',
-    'notice', 'Notice', 'payment', 'Payment', 'day rate', 'Day Rate',
-    'working day', 'Working Day', 'loss and expense', 'extension of time',
+    'notice', 'Notice', 'day rate', 'Day Rate', 'working day',
+    'loss and expense', 'extension of time', 'access', 'utility',
   ]
   const sections: Array<{ idx: number; text: string }> = []
   const seen = new Set<number>()
@@ -46,11 +53,10 @@ function extractKeyContractSections(text: string, maxChars: number): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { contractText, correspondenceText, programmes, rateContext } = req.body as {
+  const { contractText, correspondenceText, programmes } = req.body as {
     contractText?: string
     correspondenceText?: string
     programmes?: string[]
-    rateContext?: string
   }
 
   if (!contractText) return res.status(400).json({ error: 'contractText is required' })
@@ -60,45 +66,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const contractExtracted = extractKeyContractSections(contractText, 60000)
   const corrContent = correspondenceText ? correspondenceText.slice(0, 20000) : ''
-  const progContent = (programmes && programmes.length > 0)
+  const hasProgrammes = programmes && programmes.length > 0
+  const progContent = hasProgrammes
     ? programmes.map((p, i) => `=== PROGRAMME ${i + 1} (${i === 0 ? 'earliest' : 'latest'}) ===\n${p}`).join('\n\n')
     : ''
 
-  const hasProgrammes = progContent.length > 0
+  const today = new Date().toISOString().split('T')[0]
 
-  const systemPrompt = `You are SiteClause, an expert Irish construction claims lawyer specialising in PW-CF3 contracts.
+  const systemPrompt = `You are a construction claims data extractor for Irish PW-CF3 contracts. Your ONLY job is to extract structured facts from documents. You do NOT calculate values — that is done by the software.
 
-Your job: identify EVERY claimable event and value each one accurately.
+For EACH claimable event you find, extract:
+- title: specific descriptive name
+- claimType: exactly "Compensation Event" OR "Variation Order" OR "Additional Works"
+- description: what happened, who is responsible, contractual basis
+- blockedFrom: the date the event started/task was blocked (format YYYY-MM-DD). Use the Start date from the programme. If not in documents write null.
+- blockedTo: the date the blockage ended or was resolved (format YYYY-MM-DD). If STILL ONGOING in the latest programme, write null and set stillOngoing: true.
+- stillOngoing: true if the task is still blocked/unresolved in the latest document, false if resolved
+- missingData: if you cannot determine blockedFrom or blockedTo, describe exactly what information is needed e.g. "Start date not in documents — requires site records". Write null if all dates are known.
+- deadlineStatus: notice status under PW-CF3 28-day rule
+- draftNotice: 3-4 sentence formal notice
+- responsibleParty: who caused the delay/instructed the work
+- programmeRef: task ID and programme number(s) e.g. "Task 9, Prog 1 & 2"
+- clauseRef: relevant PW-CF3 clause
 
-${hasProgrammes ? `STEP 1 — SCAN THE PROGRAMMES LINE BY LINE. For EACH row containing any of these, create a SEPARATE claim:
-- "awaiting" / "cannot commence" / "waiting on" / "blocked" / "delayed due to"
-- ESB, EIR, Eir, Gas, Irish Water references
-- Plot numbers with access issues (each plot = separate claim)
-- Verbal instruction / VO / CO references
-- Zero-duration milestone tasks (0 days) indicating a blockage
-- Works extended beyond original scope
+CRITICAL RULES:
+- Scan EVERY line of the programmes for blocked tasks, access issues, utility conflicts, verbal instructions, COs
+- Each separate event = separate claim (Plot 19 and Plot 21 are separate claims)
+- For tasks in BOTH programmes: blockedFrom = Programme 1 start date, blockedTo = Programme 2 date (or null if still ongoing)
+- For tasks only in latest programme: blockedFrom = that programme's start date, blockedTo = null (stillOngoing: true)
+- DO NOT calculate calendar days, working days, or monetary values — the software does this
+- Expect 10-20 claims on a typical Irish road scheme
 
-STEP 2 — CALCULATE VALUE from programme dates:
-- For tasks blocked in Programme 1 AND Programme 2 (persistent): start = Programme 1 start date, end = Programme 2 date for that task
-- For tasks only in Programme 2 (new): start = Programme 2 start date, end = today (${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })})
-- Calendar days = end minus start (always positive — if dates seem reversed check you have start/end correct)
-- Working days = calendar days x 0.714 (round to nearest whole number)
-- Value = working days x day rate from rate card
-- Show full working: "Blocked 30/03/26 to 11/05/26 = 42 cal days = 30 wd x EUR5000/day = EUR150000"
-` : `Since no programme is uploaded, identify claims from contract and correspondence only. For value, use any dates mentioned in correspondence. If no dates available write "Requires programme dates — upload lookahead charts to value accurately".`}
+Return ONLY valid JSON: { "claims": [ ...ClaimEvent objects... ] }`
 
-STEP 3 — Also scan contract clauses and correspondence for:
-- Any CO/VO instructed but not yet valued/agreed
-- Any late instructions or information causing delay
-- Any RFIs outstanding
-
-CRITICAL: Return ALL claims — expect 10-20 on a project like this. Do NOT merge or summarise. Each event = one claim.
-
-Return ONLY valid JSON: { "claims": [ { "title": "...", "claimType": "Compensation Event or Variation Order or Additional Works", "description": "...", "estimatedValue": "...", "deadlineStatus": "...", "draftNotice": "3-4 sentence formal notice", "responsibleParty": "..." } ] }`
-
+  // Extract latest date from programmes for use as blockedTo on ongoing tasks
+  // Avoids ever-increasing values — uses last confirmed evidence date
+  function extractLatestDate(text: string): string {
+    const matches = text.match(/\b(\d{2}\/\d{2}\/\d{2}|\d{4}-\d{2}-\d{2})\b/g) ?? []
+    const dates = matches.map(d => {
+      if (d.includes('/')) { const [dd, mm, yy] = d.split('/'); return `20${yy}-${mm}-${dd}` }
+      return d
+    }).filter(d => d >= '2020-01-01' && d <= '2030-01-01').sort()
+    return dates[dates.length - 1] ?? today
+  }
+  const latestProgDate = hasProgrammes ? extractLatestDate(programmes[programmes.length - 1]) : today
   const userContent = [
-    rateContext ? `RATE CARD:\n${rateContext}` : '',
-    progContent ? `LOOKAHEAD PROGRAMMES:\n${progContent}` : '',
+    hasProgrammes ? `LATEST PROGRAMME DATE: ${latestProgDate} (use as blockedTo for tasks still ongoing in this programme — do NOT use today's date)\n\nLOOKAHEAD PROGRAMMES:\n${progContent}` : `TODAY'S DATE: ${today}`,
     corrContent ? `SITE CORRESPONDENCE:\n${corrContent}` : '',
     `CONTRACT (PW-CF3 v2.8 key clauses):\n${contractExtracted}`,
   ].filter(Boolean).join('\n\n')
@@ -116,7 +129,7 @@ Return ONLY valid JSON: { "claims": [ { "title": "...", "claimType": "Compensati
             { role: 'user', content: userContent },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.1,
+          temperature: 0,  // Zero temperature — maximum determinism for fact extraction
           max_tokens: 8000,
         }),
       })
@@ -139,14 +152,9 @@ Return ONLY valid JSON: { "claims": [ { "title": "...", "claimType": "Compensati
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return res.status(500).json({ error: 'No valid JSON in response' })
 
-    const result = JSON.parse(jsonMatch[0]) as { claims?: Claim[] }
-    const claims = (result.claims ?? []).map(c => ({
-      ...c,
-      // Normalise EUR -> € in estimatedValue for parser
-      estimatedValue: c.estimatedValue.replace(/EUR(\d)/g, '€$1').replace(/EUR\s/g, '€'),
-    }))
+    const result = JSON.parse(jsonMatch[0]) as { claims?: ClaimEvent[] }
+    return res.status(200).json({ claims: result.claims ?? [] })
 
-    return res.status(200).json({ claims })
   } catch (e: unknown) {
     return res.status(500).json({ error: e instanceof Error ? e.message : 'Server error' })
   }
