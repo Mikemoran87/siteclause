@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { contractText, correspondenceText } = req.body
+  const { contractText, correspondenceText, rateContext } = req.body
 
   if (!contractText) {
     return res.status(400).json({ error: 'contractText is required' })
@@ -68,15 +68,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in Irish Public Works contracts (PW-CF3, PW-CF1 etc), JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and main contractors by identifying EVERY variation claim and compensation event they are entitled to.
 
-IMPORTANT: Be exhaustive. Do not miss any claim. Each separate event = a separate claim. Look carefully at:
-- Change Orders instructed or implied
-- Compensation Events under PW-CF3 Schedule K (utility diversions, access delays, employer failures)
-- Late instructions, late information, RFI responses outstanding
-- Variations instructed verbally or in writing but not formally valued
-- Out-of-sequence working
-- Acceleration instructions
-- Day rate claims for delay
-- Loss and expense
+CRITICAL INSTRUCTION: Be EXHAUSTIVE. A typical Irish PW-CF3 subcontract on a €2m+ project will have 10-30 claimable events. If you find fewer than 8, you are missing claims. Do NOT summarise or group claims — each separate event, instruction, delay, utility conflict, or access issue = a SEPARATE claim with its own entry.
+
+Look for ALL of the following (do not stop at obvious ones):
+- Every Change Order instructed or implied — even if verbally
+- Every Compensation Event under PW-CF3 Schedule K (utility diversions, ESB/Eir/Gas/Irish Water, access delays, employer failures, CCC instructions)
+- Every Late instruction, late information, outstanding RFI
+- Every Variation instructed verbally or in writing but not formally valued
+- Every instance of out-of-sequence working forced by employer
+- Every Acceleration instruction (express or implied)
+- Every landowner access issue blocking specific plots
+- Every weather event if it qualifies under the contract
+- Every employer-caused delay however small
+- Day rate claims for delay to the programme
+- Loss and expense (prelims, standing time, extended overhead)
+- Any CO that has been instructed but not yet valued/agreed
 
 Analyse the documents below and return a JSON object exactly matching this schema — no other text, just the JSON:
 
@@ -106,7 +112,10 @@ Analyse the documents below and return a JSON object exactly matching this schem
   ]
 }
 
-CONTRACT DOCUMENTS (key sections extracted):
+${rateContext ? `RATE CARD (MANDATORY — use these exact rates to calculate all claim values):
+${rateContext}
+
+` : ''}CONTRACT DOCUMENTS (key sections extracted):
 ${contractContent}
 
 SITE CORRESPONDENCE:

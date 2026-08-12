@@ -35,7 +35,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const rateContext = body.rateContext ?? ''
     const isMulti = programmes.length > 1
 
-    const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors. Be AGGRESSIVE — find EVERY possible entitlement.
+    const systemPrompt = `You are a construction claims expert specialising in delay analysis for Irish subcontractors under PW-CF3.
+
+CRITICAL INSTRUCTION: Be EXHAUSTIVE. A typical Irish road improvement project with 2 lookahead charts will have 8-20 claimable events. If you find fewer than 6, you are almost certainly missing claims. Each blocked task, each utility conflict, each access issue, each Change Order, each verbal instruction = a SEPARATE claim. Do NOT group them.
 
 ${isMulti ? `You have ${programmes.length} programme documents in CHRONOLOGICAL ORDER (earliest first). These are sequential 4-week lookaheads from the same project — Programme 2 continues from Programme 1.
 

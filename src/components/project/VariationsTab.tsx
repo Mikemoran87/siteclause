@@ -150,7 +150,7 @@ export default function VariationsTab({ projectId, userId }: Props) {
       const response = await fetch('/api/analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractText: contractText + rateContext, correspondenceText }),
+        body: JSON.stringify({ contractText, correspondenceText, rateContext }),
       })
       const result = await response.json() as { claims?: Array<{ title: string; description: string; estimatedValue: string; deadlineStatus: string; draftNotice: string }>; error?: string }
       if (!response.ok || result.error) throw new Error(result.error ?? `Server error ${response.status}`)
