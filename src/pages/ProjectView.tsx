@@ -6,11 +6,11 @@ import ContractTab from '../components/project/ContractTab'
 import CorrespondenceTab from '../components/project/CorrespondenceTab'
 import RateCardTab from '../components/project/RateCardTab'
 import VariationsTab from '../components/project/VariationsTab'
-import NoticesTab from '../components/project/NoticesTab'
+import TimelineTab from '../components/project/TimelineTab'
 import ChatTab from '../components/project/ChatTab'
 import BottomNav from '../components/BottomNav'
 
-type Tab = 'overview' | 'contract' | 'correspondence' | 'rates' | 'variations' | 'notices' | 'chat'
+type Tab = 'overview' | 'contract' | 'correspondence' | 'rates' | 'variations' | 'timeline' | 'chat'
 
 interface Props {
   projectId: string
@@ -24,7 +24,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'correspondence', label: 'Correspondence' },
   { id: 'rates', label: 'Rates' },
   { id: 'variations', label: 'Variations' },
-  { id: 'notices', label: 'Notices' },
+  { id: 'timeline', label: 'Timeline' },
   { id: 'chat', label: 'Chat' },
 ]
 
@@ -42,7 +42,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
   // Persist active tab in URL hash so tab survives switching browser tabs
   const getTabFromHash = (): Tab => {
     const hash = window.location.hash.replace('#', '') as Tab
-    const valid: Tab[] = ['overview', 'contract', 'correspondence', 'rates', 'variations', 'notices', 'chat']
+    const valid: Tab[] = ['overview', 'contract', 'correspondence', 'rates', 'variations', 'timeline', 'chat']
     return valid.includes(hash) ? hash : 'overview'
   }
   const [activeTab, setActiveTab] = useState<Tab>(getTabFromHash)
@@ -181,8 +181,8 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
         {activeTab === 'variations' && (
           <VariationsTab projectId={projectId} userId={userId} />
         )}
-        {activeTab === 'notices' && (
-          <NoticesTab projectId={projectId} projectName={project?.name} />
+        {activeTab === 'timeline' && (
+          <TimelineTab projectId={projectId} projectName={project?.name} />
         )}
         {activeTab === 'chat' && (
           <ChatTab projectId={projectId} userId={userId} projectName={project.name} />
