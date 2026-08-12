@@ -98,7 +98,7 @@ Analyse the documents below and return a JSON object exactly matching this schem
       "severity": "urgent | valid | review",
       "clause": "Relevant contract clause",
       "description": "2-3 sentences explaining the claim and entitlement",
-      "estimatedValue": "Value ALL claims using day rate method. If day rate in rate card, calculate days × rate = total. ALWAYS estimate the number of days even if uncertain — use context clues (notice dates, instruction dates, programme entries) and state your assumption e.g. 'Est. 5–10 working days × €5,000 = €25,000–€50,000 (days to be confirmed)'. NEVER write X working days. If truly no basis at all, write 'Est. 3 working days × [day rate] = TBC'.",
+      "estimatedValue": "Value claims using day rate where you have ACTUAL data from the contract or correspondence. Only calculate a value if you have real dates/durations to work from — e.g. notice issued 18/08/25, still outstanding = X working days. If you cannot calculate an accurate value from the documents provided, write 'Value: requires programme/site records — provide actual start and current date of delay'. NEVER invent day counts. Accuracy over completeness.",
       "deadlineStatus": "e.g. Notice required within 28 days | EXPIRED — submit immediately",
       "draftNotice": "Full formal notice text referencing the specific clause and event"
     }

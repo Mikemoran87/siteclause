@@ -69,7 +69,7 @@ For EACH claim:
 - claimType: Classify as exactly one of: "Compensation Event" (employer-caused delay — utility, access, late instruction) | "Variation Order" (instructed additional/changed works, CO) | "Additional Works" (verbal instruction, out-of-scope works not yet formalised)
 - title: Specific name e.g. "ESB.08 Overhead Diversion Delay — Ch440-540 Pouladuff Road"
 - description: What is blocked/instructed, who is responsible, when notice was given, how long outstanding${isMulti ? ', which lookaheads it appears in' : ''}
-- estimatedValue: Value using day rate method. ALWAYS estimate days even if uncertain — use programme dates, notice dates, task duration. State assumption e.g. "Est. 10 working days × €5,000 = €50,000 (days estimated from programme)". NEVER write "X working days". If truly unknown write "Est. 5 working days × €5,000 = €25,000 (days to be confirmed)". Convert calendar days to working days (×0.714).
+- estimatedValue: Calculate from ACTUAL dates in the programme only. Use task Start date and Finish date (or today's date if still ongoing) to get calendar days, × 0.714 for working days, × day rate. Show working e.g. "Blocked from 30/03/26 to 11/05/26 = 42 calendar days = 30 working days × €5,000 = €150,000". If no day rate in rate card write "30 working days × [day rate required]". NEVER invent or estimate days — only use actual programme dates.
 - deadlineStatus: "Submit notice immediately" or "Notice required within X days" based on 28-day PW-CF3 rule
 - draftNotice: Formal 3-4 sentence notice citing the lookahead entry and PW-CF3 clause
 - responsibleParty: ESB / Eir / Cork City Council / Client / Employer / Landowner (be specific)
