@@ -61,10 +61,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return result || text.slice(0, maxChars)
   }
 
-  // Use up to 50k chars of contract (key sections) + 20k correspondence
-  // GPT-4o: 128k tokens. Use up to 200k chars contract + 80k correspondence
-  const contractContent = extractKeyContractSections(contractText, 200000)
-  const corrContent = correspondenceText ? correspondenceText.slice(0, 80000) : 'No correspondence provided'
+  // GPT-4o 128k tokens ≈ 480k chars. Vercel 30s timeout limits how much we can send safely.
+  // 100k contract + 40k correspondence = safe and comprehensive
+  const contractContent = extractKeyContractSections(contractText, 100000)
+  const corrContent = correspondenceText ? correspondenceText.slice(0, 40000) : 'No correspondence provided'
 
   const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in Irish Public Works contracts (PW-CF3, PW-CF1 etc), JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and main contractors by identifying EVERY variation claim and compensation event they are entitled to.
 
