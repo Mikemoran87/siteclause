@@ -38,7 +38,25 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ProjectView({ projectId, userId, onBack }: Props) {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+
+  // Persist active tab in URL hash so tab survives switching browser tabs
+  const getTabFromHash = (): Tab => {
+    const hash = window.location.hash.replace('#', '') as Tab
+    const valid: Tab[] = ['overview', 'contract', 'correspondence', 'rates', 'variations', 'notices', 'chat']
+    return valid.includes(hash) ? hash : 'overview'
+  }
+  const [activeTab, setActiveTab] = useState<Tab>(getTabFromHash)
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab)
+    window.history.replaceState({}, '', `${window.location.pathname}#${tab}`)
+  }
+
+  useEffect(() => {
+    const onPop = () => setActiveTab(getTabFromHash())
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   useEffect(() => {
     loadProject()
@@ -128,7 +146,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
             {TABS.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`px-4 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
                   activeTab === tab.id
                     ? 'border-gray-900 text-gray-900'
@@ -172,7 +190,7 @@ export default function ProjectView({ projectId, userId, onBack }: Props) {
       </div>
 
       {/* ── Bottom Nav — mobile only ── */}
-      <BottomNav activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)} />
+      <BottomNav activeTab={activeTab} onTabChange={(tab) => handleTabChange(tab as Tab)} />
     </div>
   )
 }

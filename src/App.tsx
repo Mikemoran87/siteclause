@@ -11,107 +11,78 @@ import LeadFunnel from './pages/LeadFunnel'
 import LoginPage from './pages/LoginPage'
 import type { AnalysisResult } from './types'
 
-type AppPage = 'auth' | 'dashboard' | 'project'
 type DemoPage = 'landing' | 'upload' | 'results'
 
-const getPath = () =>
-  typeof window !== 'undefined' ? window.location.pathname : '/'
+// ── URL helpers ──────────────────────────────────────────────────────────────
 
-const isDemo = () => {
-  const p = getPath()
-  return p === '/demo' || p.startsWith('/demo/')
+function getPath() {
+  return typeof window !== 'undefined' ? window.location.pathname : '/'
 }
 
-const isAnalyse = () => {
-  const p = getPath()
-  return p === '/analyse' || p.startsWith('/analyse/')
+function navigate(path: string) {
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
-const isLogin = () => {
-  const p = getPath()
-  return p === '/login' || p.startsWith('/login/')
+function parseRoute() {
+  const path = getPath()
+  if (path === '/demo' || path.startsWith('/demo/')) return { page: 'demo' as const }
+  if (path === '/analyse' || path.startsWith('/analyse/')) return { page: 'analyse' as const }
+  if (path === '/login' || path.startsWith('/login/')) return { page: 'login' as const }
+  if (path === '/dashboard') return { page: 'dashboard' as const }
+  const projectMatch = path.match(/^\/project\/([^/]+)/)
+  if (projectMatch) return { page: 'project' as const, projectId: projectMatch[1] }
+  return { page: 'dashboard' as const }
 }
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
-  const [appPage, setAppPage] = useState<AppPage>(() => {
-    const saved = sessionStorage.getItem('sc_page') as AppPage | null
-    return saved ?? 'auth'
-  })
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
-    return sessionStorage.getItem('sc_project_id') ?? null
-  })
-  const [demoMode, setDemoMode] = useState(isDemo())
-  const [analyseMode, setAnalyseMode] = useState(isAnalyse())
-  const [loginMode, setLoginMode] = useState(isLogin())
+  const [route, setRoute] = useState(parseRoute)
 
   // Demo sub-state
   const [demoPage, setDemoPage] = useState<DemoPage>('landing')
   const [demoResults, setDemoResults] = useState<AnalysisResult | null>(null)
 
-  // Persist navigation state across tab switches
+  // Listen to URL changes
   useEffect(() => {
-    sessionStorage.setItem('sc_page', appPage)
-  }, [appPage])
+    const onPop = () => setRoute(parseRoute())
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
-  useEffect(() => {
-    if (selectedProjectId) {
-      sessionStorage.setItem('sc_project_id', selectedProjectId)
-    } else {
-      sessionStorage.removeItem('sc_project_id')
-    }
-  }, [selectedProjectId])
-
+  // Auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setSessionLoading(false)
+      // If on root or /login with a session, go to dashboard
       if (session) {
-        // Restore saved page — don't override if already set from sessionStorage init
-        const savedPage = sessionStorage.getItem('sc_page') as AppPage | null
-        const savedProject = sessionStorage.getItem('sc_project_id')
-        if (savedPage === 'project' && savedProject) {
-          setAppPage('project')
-          setSelectedProjectId(savedProject)
-        } else if (!savedPage || savedPage === 'auth') {
-          setAppPage('dashboard')
+        const r = parseRoute()
+        if (r.page === 'login' || getPath() === '/') {
+          navigate('/dashboard')
         }
-        // If savedPage is 'dashboard' or 'project', leave state as-is (already initialised from sessionStorage)
+      } else {
+        // Not logged in — only allow public routes
+        const r = parseRoute()
+        if (r.page !== 'demo' && r.page !== 'analyse' && r.page !== 'login') {
+          navigate('/login')
+        }
       }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
-      if (session) {
-        // Only reset to dashboard on actual sign-in, not on token refresh or tab focus
-        if (event === 'SIGNED_IN') {
-          setAppPage('dashboard')
-          setDemoMode(false)
-          setAnalyseMode(false)
-          setLoginMode(false)
-        }
-        // For TOKEN_REFRESHED and other events, keep current page
-      } else {
-        setAppPage('auth')
-        setSelectedProjectId(null)
-        sessionStorage.removeItem('sc_page')
-        sessionStorage.removeItem('sc_project_id')
+      if (event === 'SIGNED_IN' && session) {
+        navigate('/dashboard')
       }
+      if (event === 'SIGNED_OUT') {
+        navigate('/login')
+      }
+      // TOKEN_REFRESHED etc — do nothing, stay on current page
     })
 
     return () => subscription.unsubscribe()
-  }, [])
-
-  // Track route changes (back/forward)
-  useEffect(() => {
-    const onPop = () => {
-      setDemoMode(isDemo())
-      setAnalyseMode(isAnalyse())
-      setLoginMode(isLogin())
-    }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
   }, [])
 
   if (sessionLoading) {
@@ -122,25 +93,17 @@ export default function App() {
     )
   }
 
-  // ── /analyse — always accessible, no auth required ──
-  if (analyseMode) {
-    return <LeadFunnel />
+  // ── /analyse ──
+  if (route.page === 'analyse') return <LeadFunnel />
+
+  // ── /login ──
+  if (route.page === 'login') {
+    if (session) { navigate('/dashboard'); return null }
+    return <LoginPage />
   }
 
-  // ── /login — always accessible ──
-  if (loginMode) {
-    // If already logged in, redirect to dashboard
-    if (session) {
-      setAppPage('dashboard')
-      setLoginMode(false)
-      // Fall through to dashboard below
-    } else {
-      return <LoginPage />
-    }
-  }
-
-  // ── /demo — always accessible ──
-  if (demoMode) {
+  // ── /demo ──
+  if (route.page === 'demo') {
     return (
       <div className="min-h-screen bg-gray-50">
         {demoPage === 'landing' && <Landing onStart={() => setDemoPage('upload')} />}
@@ -161,32 +124,24 @@ export default function App() {
   }
 
   // ── Not authenticated ──
-  if (!session) {
-    return <AuthPage />
-  }
+  if (!session) return <AuthPage />
 
-  // ── Project view ──
-  if (appPage === 'project' && selectedProjectId) {
+  // ── /project/:id ──
+  if (route.page === 'project' && route.projectId) {
     return (
       <ProjectView
-        projectId={selectedProjectId}
+        projectId={route.projectId}
         userId={session.user.id}
-        onBack={() => {
-          setAppPage('dashboard')
-          setSelectedProjectId(null)
-        }}
+        onBack={() => navigate('/dashboard')}
       />
     )
   }
 
-  // ── Dashboard ──
+  // ── /dashboard (default) ──
   return (
     <Dashboard
       userId={session.user.id}
-      onSelectProject={(projectId) => {
-        setSelectedProjectId(projectId)
-        setAppPage('project')
-      }}
+      onSelectProject={(projectId) => navigate(`/project/${projectId}`)}
     />
   )
 }
