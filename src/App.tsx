@@ -56,14 +56,14 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setSessionLoading(false)
-      // If on root or /login with a session, go to dashboard
       if (session) {
-        const r = parseRoute()
-        if (r.page === 'login' || getPath() === '/') {
+        // Only redirect from root/login — never redirect away from a valid project/dashboard URL
+        const path = getPath()
+        if (path === '/' || path === '/login' || path === '/auth') {
           navigate('/dashboard')
         }
+        // /project/:id, /dashboard — stay exactly where we are
       } else {
-        // Not logged in — only allow public routes
         const r = parseRoute()
         if (r.page !== 'demo' && r.page !== 'analyse' && r.page !== 'login') {
           navigate('/login')
@@ -74,12 +74,17 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       if (event === 'SIGNED_IN' && session) {
-        navigate('/dashboard')
+        // Only navigate on actual sign-in — NOT on token refresh / tab focus
+        // Check if we're on an auth page before redirecting
+        const currentPath = getPath()
+        const isAuthPage = currentPath === '/login' || currentPath === '/' || currentPath === '/auth'
+        if (isAuthPage) navigate('/dashboard')
+        // If already on /project/... or /dashboard — stay put
       }
       if (event === 'SIGNED_OUT') {
         navigate('/login')
       }
-      // TOKEN_REFRESHED etc — do nothing, stay on current page
+      // TOKEN_REFRESHED, INITIAL_SESSION etc — do nothing
     })
 
     return () => subscription.unsubscribe()
