@@ -79,7 +79,8 @@ No markdown, no explanation. Just the JSON object.`
 
     // Build programme content — split token budget across programmes
     // GPT-4o 128k context — use up to 200k chars for programmes + 50k for contract
-    const maxTokens = 200000
+    // 30k TPM limit on free tier — keep total programme text under ~60k chars
+    const maxTokens = 60000
     const perProg = Math.floor(maxTokens / programmes.length)
     const progContent = isMulti
       ? programmes.map((p, i) => `\n=== PROGRAMME ${i + 1} (${['earliest', 'later', 'latest', 'most recent'][Math.min(i, 3)]}) ===\n${p.slice(0, perProg)}`).join('\n')
@@ -88,26 +89,34 @@ No markdown, no explanation. Just the JSON object.`
     const userContent = [
       'PROGRAMME DOCUMENT(S):',
       progContent,
-      contractText ? `\nCONTRACT CONTEXT (key clauses):\n${contractText.slice(0, 50000)}` : '',
+      contractText ? `\nCONTRACT CONTEXT (key clauses):\n${contractText.slice(0, 15000)}` : '',
       rateContext,
     ].filter(Boolean).join('\n')
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0.2,
-        max_tokens: 8000,
-      }),
-    })
+    // Retry up to 2 times on rate limit (429)
+    let response: Response | null = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent },
+          ],
+          temperature: 0.2,
+          max_tokens: 8000,
+        }),
+      })
+      if (response.status !== 429) break
+      const retryAfter = parseInt(response.headers.get('retry-after') ?? '6', 10)
+      await new Promise(r => setTimeout(r, retryAfter * 1000))
+    }
+    if (!response) return res.status(500).json({ error: 'No response from OpenAI' })
 
     const data = await response.json() as {
       choices?: Array<{ message: { content: string } }>
