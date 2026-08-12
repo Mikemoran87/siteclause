@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { contractText, correspondenceText, rateContext } = req.body
+  const { contractText, correspondenceText, rateContext, programmeText } = req.body
 
   if (!contractText) {
     return res.status(400).json({ error: 'contractText is required' })
@@ -98,7 +98,7 @@ Analyse the documents below and return a JSON object exactly matching this schem
       "severity": "urgent | valid | review",
       "clause": "Relevant contract clause",
       "description": "2-3 sentences explaining the claim and entitlement",
-      "estimatedValue": "Value claims using day rate where you have ACTUAL data from the contract or correspondence. Only calculate a value if you have real dates/durations to work from — e.g. notice issued 18/08/25, still outstanding = X working days. If you cannot calculate an accurate value from the documents provided, write 'Value: requires programme/site records — provide actual start and current date of delay'. NEVER invent day counts. Accuracy over completeness.",
+      "estimatedValue": "If programme documents are provided, use actual task Start and Finish dates to calculate calendar days, convert to working days (×0.714), multiply by day rate. Show full working e.g. 'Blocked 30/03/26 – 11/05/26 = 42 calendar days = 30 working days × €5,000 = €150,000'. If no programme dates available but correspondence shows dates, use those. If no dates available at all write 'Requires programme dates to value accurately'. NEVER invent figures.",
       "deadlineStatus": "e.g. Notice required within 28 days | EXPIRED — submit immediately",
       "draftNotice": "Full formal notice text referencing the specific clause and event"
     }
@@ -114,6 +114,9 @@ Analyse the documents below and return a JSON object exactly matching this schem
 
 ${rateContext ? `RATE CARD (MANDATORY — use these exact rates to calculate all claim values):
 ${rateContext}
+
+` : ''}${programmeText ? `PROGRAMME / LOOKAHEAD CHARTS (use dates here for accurate valuations):
+${programmeText.slice(0, 60000)}
 
 ` : ''}CONTRACT DOCUMENTS (key sections extracted):
 ${contractContent}
