@@ -363,7 +363,7 @@ export async function getRateCard(projectId: string): Promise<Rate[]> {
     .from('rate_cards')
     .select('rates')
     .eq('project_id', projectId)
-    .order('updated_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (error) return []
@@ -371,10 +371,12 @@ export async function getRateCard(projectId: string): Promise<Rate[]> {
 }
 
 export async function saveRateCard(projectId: string, userId: string, rates: Rate[]): Promise<void> {
-  // Upsert: delete existing then insert
-  await supabase.from('rate_cards').delete().eq('project_id', projectId)
+  // Delete existing
+  const { error: delError } = await supabase.from('rate_cards').delete().eq('project_id', projectId)
+  if (delError) throw new Error(`Delete failed: ${delError.message}`)
+  // Insert new
   const { error } = await supabase
     .from('rate_cards')
     .insert({ project_id: projectId, user_id: userId, rates, updated_at: new Date().toISOString() })
-  if (error) throw error
+  if (error) throw new Error(`Save failed: ${error.message} (code: ${error.code})`)
 }
