@@ -371,12 +371,19 @@ export async function getRateCard(projectId: string): Promise<Rate[]> {
 }
 
 export async function saveRateCard(projectId: string, userId: string, rates: Rate[]): Promise<void> {
-  // Delete existing
-  const { error: delError } = await supabase.from('rate_cards').delete().eq('project_id', projectId)
-  if (delError) throw new Error(`Delete failed: ${delError.message}`)
-  // Insert new
-  const { error } = await supabase
+  // Try upsert first (requires unique constraint on project_id)
+  const { error: upsertError } = await supabase
+    .from('rate_cards')
+    .upsert(
+      { project_id: projectId, user_id: userId, rates, updated_at: new Date().toISOString() },
+      { onConflict: 'project_id' }
+    )
+  if (!upsertError) return
+
+  // Upsert failed (no unique constraint yet) — fall back to delete + insert
+  await supabase.from('rate_cards').delete().eq('project_id', projectId)
+  const { error: insertError } = await supabase
     .from('rate_cards')
     .insert({ project_id: projectId, user_id: userId, rates, updated_at: new Date().toISOString() })
-  if (error) throw new Error(`Save failed: ${error.message} (code: ${error.code})`)
+  if (insertError) throw new Error(`Save failed: ${insertError.message} (code: ${insertError.code})`)
 }

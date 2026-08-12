@@ -8,9 +8,7 @@ interface Props {
   userId: string
 }
 
-const DEFAULT_RATES: Rate[] = [
-  { category: 'Other', description: 'Contractor Day Rate (Part 2D — all claims)', unit: 'day', rate: 0 },
-]
+const DEFAULT_RATES: Rate[] = []
 
 const UNITS = ['hr', 'day', 'week', 'm', 'm²', 'm³', 'no', 't', 'sum', '%']
 const CATEGORIES = ['Labour', 'Plant', 'Materials', 'Subcontract', 'Overhead & Profit', 'Other']
@@ -147,10 +145,15 @@ ${contract.content.slice(0, 8000)}`
     setError('')
     try {
       await saveRateCard(projectId, userId, ratesToSave)
-      setRates(ratesToSave)
-      setSuccess('Rate card saved ✓')
+      // Verify by re-reading from DB
+      const verified = await getRateCard(projectId)
+      if (verified.length === 0 && ratesToSave.length > 0) {
+        throw new Error('Save appeared to succeed but rates not found in database — check Supabase RLS policies')
+      }
+      setRates(verified)
+      setSuccess(`Rate card saved ✓ (${verified.length} rate${verified.length !== 1 ? 's' : ''})`)
       setEditMode(false)
-      setTimeout(() => setSuccess(''), 3000)
+      setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Save failed')
     }
