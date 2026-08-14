@@ -26,6 +26,7 @@ function navigate(path: string) {
 
 function parseRoute() {
   const path = getPath()
+  if (path === '/' || path === '') return { page: 'home' as const }
   if (path === '/demo' || path.startsWith('/demo/')) return { page: 'demo' as const }
   if (path === '/analyse' || path.startsWith('/analyse/')) return { page: 'analyse' as const }
   if (path === '/login' || path.startsWith('/login/')) return { page: 'login' as const }
@@ -57,18 +58,14 @@ export default function App() {
       setSession(session)
       setSessionLoading(false)
       if (session) {
-        // Only redirect from root/login — never redirect away from a valid project/dashboard URL
+        // Logged in on root or login page → go to dashboard
         const path = getPath()
         if (path === '/' || path === '/login' || path === '/auth') {
           navigate('/dashboard')
         }
         // /project/:id, /dashboard — stay exactly where we are
-      } else {
-        const r = parseRoute()
-        if (r.page !== 'demo' && r.page !== 'analyse' && r.page !== 'login') {
-          navigate('/login')
-        }
       }
+      // Not logged in — stay on current page (home, login, analyse, demo all fine without auth)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -94,6 +91,15 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-400 text-sm">Loading…</div>
+      </div>
+    )
+  }
+
+  // ── / (homepage — public marketing site) ──
+  if (route.page === 'home') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Landing onStart={() => navigate('/analyse')} onLogin={() => navigate('/login')} />
       </div>
     )
   }

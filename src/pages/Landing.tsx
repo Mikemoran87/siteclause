@@ -2,9 +2,10 @@ import WaitlistForm from '../components/WaitlistForm'
 
 interface Props {
   onStart: () => void
+  onLogin?: () => void
 }
 
-export default function Landing({ onStart }: Props) {
+export default function Landing({ onStart, onLogin }: Props) {
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
@@ -12,12 +13,22 @@ export default function Landing({ onStart }: Props) {
         <div className="text-2xl font-black text-amber-500 tracking-tight">
           Site<span className="text-gray-900">Clause</span>
         </div>
-        <button
-          onClick={onStart}
-          className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-lg transition-colors text-sm"
-        >
-          Try Free →
-        </button>
+        <div className="flex items-center gap-3">
+          {onLogin && (
+            <button
+              onClick={onLogin}
+              className="text-gray-600 hover:text-gray-900 font-semibold text-sm transition-colors"
+            >
+              Log in
+            </button>
+          )}
+          <button
+            onClick={onStart}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-lg transition-colors text-sm"
+          >
+            Try Free →
+          </button>
+        </div>
       </nav>
 
       {/* Hero */}
