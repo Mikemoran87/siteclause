@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /project/
+
+Sitemap: https://siteclause.io/sitemap.xml
