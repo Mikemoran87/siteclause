@@ -53,14 +53,8 @@ export default function Landing({ onStart, onLogin }: Props) {
           >
             Analyse My Contract. Free →
           </button>
-          <button
-            onClick={onStart}
-            className="border-2 border-amber-500 text-amber-600 hover:bg-amber-50 text-base font-bold px-8 py-4 rounded-xl transition-colors"
-          >
-            Try the Demo →
-          </button>
         </div>
-        <p className="text-sm text-gray-400 mt-4">No signup. No credit card. No documents needed for the demo.</p>
+        <p className="text-sm text-gray-400 mt-4">No signup. No credit card required.</p>
       </section>
 
       {/* Waitlist strip */}
