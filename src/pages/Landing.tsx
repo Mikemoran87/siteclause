@@ -43,7 +43,7 @@ export default function Landing({ onStart, onLogin }: Props) {
         </h1>
 
         <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed mb-10">
-          Upload your contract and site emails. SiteClause finds every variation claim, tracks every deadline, and drafts your notices — in under 2 minutes.
+          Upload your contract and site emails. SiteClause finds every variation claim, tracks every deadline, and drafts your notices. In under 2 minutes.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -51,7 +51,7 @@ export default function Landing({ onStart, onLogin }: Props) {
             onClick={onStart}
             className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-bold px-10 py-4 rounded-xl transition-colors shadow-lg shadow-amber-200"
           >
-            Analyse My Contract — It's Free →
+            Analyse My Contract. Free →
           </button>
           <button
             onClick={onStart}
@@ -102,10 +102,10 @@ export default function Landing({ onStart, onLogin }: Props) {
             </div>
             <div className="p-5 space-y-3">
               {[
-                'Main contractor says "we\'ll sort the VO later" — it never happens',
+                'Main contractor says "we\'ll sort the VO later" . It never happens',
                 'Variation emails pile up, nobody submits a formal claim',
-                'Notice deadline passes — entitlement is lost',
-                'Final account comes in 15% short — no paperwork to fight it',
+                'Notice deadline passes. Entitlement is lost.',
+                'Final account comes in 15% short. No paperwork to fight it.',
                 'You absorb the loss and move on',
               ].map((t) => (
                 <div key={t} className="flex gap-3 items-start">
@@ -126,7 +126,7 @@ export default function Landing({ onStart, onLogin }: Props) {
             </div>
             <div className="p-5 space-y-3">
               {[
-                'Upload contract + emails — AI reads everything in seconds',
+                'Upload contract + emails. AI reads everything in seconds.',
                 'Every variation event identified, valued, and categorised',
                 'Deadline tracker shows exactly what\'s urgent and what\'s safe',
                 'Draft notices generated, ready to send with one click',
@@ -139,7 +139,7 @@ export default function Landing({ onStart, onLogin }: Props) {
               ))}
             </div>
             <div className="bg-amber-50 border-t border-amber-200 px-5 py-3 text-center text-xs font-bold text-amber-800">
-              Full entitlement recovered — in 2 minutes
+              Full entitlement recovered. In 2 minutes.
             </div>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function Landing({ onStart, onLogin }: Props) {
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="bg-gray-900 rounded-2xl overflow-hidden">
           <div className="grid grid-cols-2 gap-0">
-            {/* Left — copy */}
+            {/* Left copy */}
             <div className="p-10 flex flex-col justify-center">
               <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wide w-fit">
                 New Feature
@@ -158,7 +158,7 @@ export default function Landing({ onStart, onLogin }: Props) {
                 Ask your contract<br />anything.
               </h2>
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                Once SiteClause reads your contract, you can ask it any question in plain English. What are my notice deadlines? Can the MC back-charge me? What does clause 5.3 actually mean? Get precise answers based on your actual contract — not a generic template.
+                Once SiteClause reads your contract, you can ask it any question in plain English. What are my notice deadlines? Can the MC back-charge me? What does clause 5.3 actually mean? Get precise answers based on your actual contract. Not a generic template.
               </p>
               <div className="space-y-2">
                 {[
@@ -173,7 +173,7 @@ export default function Landing({ onStart, onLogin }: Props) {
                 ))}
               </div>
             </div>
-            {/* Right — mock chat */}
+            {/* Right mock chat */}
             <div className="bg-gray-800 p-8 flex flex-col justify-center gap-4">
               <div className="flex gap-3 items-start">
                 <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">SC</div>
@@ -189,7 +189,7 @@ export default function Landing({ onStart, onLogin }: Props) {
               <div className="flex gap-3 items-start">
                 <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">SC</div>
                 <div className="bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-200 leading-relaxed">
-                  Yes — under <span className="text-amber-400 font-semibold">Clause 7.1</span>, you're entitled to loss and expense for MC-caused delays. You must give written notice within <span className="text-amber-400 font-semibold">7 days</span> of the delay event with contemporary records of costs. Your site diary entries will support this claim.
+                  Yes. Under <span className="text-amber-400 font-semibold">Clause 7.1</span>, you're entitled to loss and expense for MC-caused delays. You must give written notice within <span className="text-amber-400 font-semibold">7 days</span> of the delay event with contemporary records of costs. Your site diary entries will support this claim.
                   <span className="block text-gray-500 text-xs mt-2">Note: AI-generated guidance, not legal advice.</span>
                 </div>
               </div>
