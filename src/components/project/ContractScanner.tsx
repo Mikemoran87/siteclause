@@ -184,16 +184,19 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-      <div className="text-xs font-bold text-amber-800 uppercase tracking-wide">🔍 Find All Claims & Values</div>
-      <p className="text-xs text-amber-700">
-        Reads contract, correspondence, and lookahead charts. AI identifies claims — dates and values calculated from exact programme data only. Same input = same output every time.
+    <div className="bg-[#1B4332] rounded-xl p-4 space-y-2">
+      <div className="text-xs font-bold text-white uppercase tracking-wide">🔍 Find All Claims & Values</div>
+      <p className="text-xs text-green-200">
+        Reads your contract, correspondence, and lookahead charts together. AI identifies every claim — dates and values calculated from actual programme data. Same input, same answer every time.
       </p>
+      <div className="bg-white/10 rounded-lg px-3 py-2 text-xs text-green-100">
+        💡 Upload your lookahead charts in the <strong className="text-white">Contract tab</strong> first (type: Programme) for accurate date-based valuations.
+      </div>
       {msg && <p className="text-sm font-semibold text-gray-700 whitespace-pre-wrap">{msg}</p>}
       <button
         onClick={handleAnalyse}
         disabled={analysing}
-        className="w-full bg-[#1B4332] hover:bg-[#2D6A4F] disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] flex items-center justify-center gap-2"
+        className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-black py-4 rounded-xl text-base transition-colors min-h-[56px] flex items-center justify-center gap-2"
       >
         {analysing ? (
           <><svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Analysing…</>
@@ -201,7 +204,7 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
       </button>
       {contractVOCount > 0 && (
         <button onClick={handleReset} disabled={resetting}
-          className="w-full border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 font-semibold py-2.5 rounded-xl text-sm min-h-[44px]">
+          className="w-full border border-white/30 text-white bg-white/10 hover:bg-white/20 font-semibold py-2.5 rounded-xl text-sm min-h-[44px]">
           {resetting ? 'Clearing…' : '🔄 Reset & Start Again'}
         </button>
       )}
