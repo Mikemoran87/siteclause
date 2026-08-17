@@ -59,6 +59,24 @@ SCHEDULE OF RATES:
 - Plant (360 excavator): £95/hour
 - Project manager / foreman: £65/hour`
 
+export const DEMO_PROGRAMME = `ID Name Duration Start Finish Predecessors Resource Names
+0 Oakfield Rise Groundworks Programme W/C 14.10.2025 180 days Mon 14/10/25 Fri 30/06/26
+1 Drainage Works 60 days Mon 14/10/25 Fri 09/01/26
+2 Northern boundary drainage run 5 days Mon 20/10/25 Fri 24/10/25
+3 RE-ROUTE INSTRUCTED — awaiting formal VO from Bradstone. Works completed 25/10/25.
+0 days Mon 20/10/25 Mon 20/10/25 Gary Pearce
+4 Main drainage run CH1 to CH485 25 days Mon 14/10/25 Fri 14/11/25
+5 Rock Excavation Plots 7-12 0 days Fri 05/11/25 Fri 05/11/25
+6 Rock survey complete. 480m3 unforeseeable rock. Awaiting agreement on additional cost from Bradstone QS.
+0 days Fri 07/11/25 Fri 07/11/25 Hartley Engineers
+7 Foundations 45 days Mon 17/11/25 Fri 16/01/26
+8 Block A foundations 15 days Mon 17/11/25 Fri 05/12/25
+9 Block B foundations - REVISED SPEC (pad and beam replacing strip footings per architect instruction 18/11/25)
+25 days Mon 08/12/25 Fri 09/01/26 Hartley Structural
+10 Accommodation Works 30 days Mon 19/01/26 Fri 27/02/26
+11 South boundary retaining wall - VERBAL INSTRUCTION from Gary Pearce 06/02/26. VO not yet issued.
+0 days Mon 09/02/26 Mon 09/02/26 Gary Pearce`
+
 export const DEMO_CORRESPONDENCE = `===== WHATSAPP GROUP: Oakfield Rise Site — Fennell Civil =====
 Exported 28 March 2026
 

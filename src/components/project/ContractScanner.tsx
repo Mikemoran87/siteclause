@@ -102,7 +102,20 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
 
           let estimatedValue = ''
           if (ref.missingData) { estimatedValue = `⚠️ Cannot calculate — ${ref.missingData}`; flagged++ }
-          else if (!blockedFrom) { estimatedValue = `⚠️ Task dates not found in programme`; flagged++ }
+          else if (!blockedFrom && dayRate > 0) {
+            // No programme dates for this task — fall back to AI estimate from description
+            const daysMatch = ref.description.match(/(\d+)\s*(?:calendar\s*)?days?/i)
+            const days = daysMatch ? parseInt(daysMatch[1]) : null
+            if (days && days > 0) {
+              const wd = Math.round(days * 0.714)
+              estimatedValue = `Est. ${days} cal days = ${wd} wd x €${dayRate.toLocaleString()}/day = €${(wd * dayRate).toLocaleString()} (days from description)`
+              valued++
+            } else {
+              estimatedValue = `⚠️ Requires programme dates — upload lookahead charts as type: Programme`
+              flagged++
+            }
+          }
+          else if (!blockedFrom) { estimatedValue = `⚠️ Requires programme dates — upload lookahead charts as type: Programme`; flagged++ }
           else if (dayRate === 0) { estimatedValue = `⚠️ Dates found but no day rate — add day rate in 💰 Rates tab`; flagged++ }
           else {
             const to = blockedTo ?? toDateStr(today)
