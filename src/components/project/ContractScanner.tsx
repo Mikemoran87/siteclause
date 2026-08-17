@@ -58,24 +58,23 @@ export default function ContractScanner({ projectId, userId, contractVOCount, on
       const contractDocs = allDocs.filter(c => c.doc_type !== 'Programme')
       const programmeDocs = allDocs.filter(c => c.doc_type === 'Programme')
 
-      if (programmeDocs.length === 0) {
-        setMsg('⚠️ No lookahead charts found — upload your programme PDFs in the Contract tab (type: Programme) for date-based valuations')
-        setAnalysing(false)
-        return
-      }
-
       const rates = await getRateCard(projectId)
       const dayRateEntry = rates.find(r => /day.?rate|day.?work/i.test(r.description) && /day|wd/i.test(r.unit))
       const dayRate = dayRateEntry?.rate ?? 0
 
-      if (dayRate === 0) {
-        setMsg('⚠️ No day rate found — go to 💰 Rates tab and add your Contractor Day Rate (per day)')
-        setAnalysing(false)
-        return
-      }
-
       const contractText = contractDocs.map(c => `=== ${c.doc_type}: ${c.label ?? c.filename} ===\n${c.content ?? ''}`).join('\n\n')
       const programmes = programmeDocs.map(c => c.content ?? '').filter(Boolean)
+
+      // Warn but never block — always scan what we have
+      if (programmeDocs.length === 0 && dayRate === 0) {
+        setMsg('Scanning contract and correspondence... Add lookahead charts (type: Programme) and a day rate in 💰 Rates for delay valuations.')
+      } else if (programmeDocs.length === 0) {
+        setMsg('Scanning contract and correspondence... No lookahead charts found — upload as type: Programme in Contract tab for delay claim values.')
+      } else if (dayRate === 0) {
+        setMsg('Scanning with ' + programmes.length + ' programme(s)... Add a day rate in 💰 Rates tab for accurate delay valuations.')
+      } else {
+        setMsg(`Scanning contract + ${programmes.length} lookahead chart${programmes.length !== 1 ? 's' : ''}...`)
+      }
 
       const corrItems = await getCorrespondence(projectId)
       const correspondenceText = corrItems.map(c => c.content).filter(Boolean).join('\n\n---\n\n')
