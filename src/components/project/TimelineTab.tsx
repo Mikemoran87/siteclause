@@ -52,8 +52,13 @@ export default function TimelineTab({ projectId, projectName }: Props) {
 
   const handleMarkSent = async (v: Variation, type: 'notice_1' | 'notice_2' | 'monthly') => {
     if (type === 'notice_1') {
-      await updateVariation(v.id, { notice_1_sent: true })
-      setVariations(prev => prev.map(x => x.id === v.id ? { ...x, notice_1_sent: true } : x))
+      // Mark sent + auto-roll monthly to 1 month from now
+      const today = new Date()
+      const nextMonthly = new Date(today)
+      nextMonthly.setMonth(nextMonthly.getMonth() + 1)
+      const nextMonthlyStr = nextMonthly.toISOString().split('T')[0]
+      await updateVariation(v.id, { notice_1_sent: true, next_monthly_due: nextMonthlyStr })
+      setVariations(prev => prev.map(x => x.id === v.id ? { ...x, notice_1_sent: true, next_monthly_due: nextMonthlyStr } : x))
     } else if (type === 'notice_2') {
       await updateVariation(v.id, { notice_2_sent: true })
       setVariations(prev => prev.map(x => x.id === v.id ? { ...x, notice_2_sent: true } : x))
@@ -70,20 +75,9 @@ export default function TimelineTab({ projectId, projectName }: Props) {
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
   }
 
-  // Build timeline events from all variations
+  // Build timeline events — skip claim_identified (too noisy), skip notice_1_sent (already shown as sent badge on notice_1_due)
   const events: TimelineEvent[] = []
   for (const v of variations) {
-    if (v.claim_date) {
-      events.push({
-        date: v.claim_date,
-        dateObj: new Date(v.claim_date),
-        type: 'claim_identified',
-        variationId: v.id,
-        variationTitle: v.title ?? 'Untitled',
-        variationValue: v.value,
-        source: v.source,
-      })
-    }
     if (v.notice_1_due) {
       events.push({
         date: v.notice_1_due,
@@ -127,14 +121,14 @@ export default function TimelineTab({ projectId, projectName }: Props) {
   // Filter
   const today = new Date(); today.setHours(0,0,0,0)
   const filtered = events.filter(e => {
-    if (filter === 'pending') return e.dateObj >= today && !e.sent && e.type !== 'claim_identified'
-    if (filter === 'overdue') return e.dateObj < today && !e.sent && e.type !== 'claim_identified' && e.type !== 'notice_1_sent' && e.type !== 'notice_2_sent'
+    if (filter === 'pending') return e.dateObj >= today && !e.sent
+    if (filter === 'overdue') return e.dateObj < today && !e.sent && e.type !== 'notice_1_sent' && e.type !== 'notice_2_sent'
     return true
   })
 
   // Summary counts
-  const overdueCount = events.filter(e => e.dateObj < today && !e.sent && e.type !== 'claim_identified' && !e.type.includes('sent')).length
-  const pendingCount = events.filter(e => e.dateObj >= today && !e.sent && e.type !== 'claim_identified').length
+  const overdueCount = events.filter(e => e.dateObj < today && !e.sent && !e.type.includes('sent')).length
+  const pendingCount = events.filter(e => e.dateObj >= today && !e.sent).length
   const sentCount = events.filter(e => e.type === 'notice_1_sent' || e.type === 'notice_2_sent').length
 
   if (loading) return <div className="py-10 text-center text-gray-400">Loading…</div>
