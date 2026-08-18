@@ -80,39 +80,31 @@ export const DEMO_PROGRAMME = `ID Name Duration Start Finish Predecessors Resour
 export const DEMO_CORRESPONDENCE = `===== WHATSAPP GROUP: Oakfield Rise Site — Fennell Civil =====
 Exported 28 March 2026
 
-14/10/2025, 07:52 - Gary Pearce (Bradstone PM): Morning all. Welcome to Oakfield Rise. Site meeting 8am Monday. Drawings on the server.
+14/10/2025, 07:52 - Gary Pearce (Bradstone PM): Morning all. Welcome to Oakfield Rise. Site meeting 8am Monday.
 
-14/10/2025, 08:04 - Sean Fennell: Cheers Gary. See you Monday.
+20/10/2025, 14:33 - Gary Pearce (Bradstone PM): Sean, we need to move the drainage run on the north boundary. About 3m north of what's on the contract. Architect's call.
 
-20/10/2025, 14:33 - Gary Pearce (Bradstone PM): Sean — we need to move the drainage run on the north boundary. New drawings coming tomorrow. About 3 metres north of what's on the contract. Architect's call.
+20/10/2025, 14:55 - Gary Pearce (Bradstone PM): About 180m of 150mm pipe. We'll sort the VO paperwork later. Just crack on.
 
-20/10/2025, 14:41 - Sean Fennell: That's a full re-route. How much are we talking?
+21/10/2025, 09:12 - Sean Fennell: Starting re-route today. Cost is 180m x £68 = £12,240 plus manholes. Need the VO Gary.
 
-20/10/2025, 14:55 - Gary Pearce (Bradstone PM): About 180m of 150mm pipe. We'll sort the VO paperwork later. Just get it going — we're against the programme.
+21/10/2025, 09:30 - Gary Pearce (Bradstone PM): Noted. Will chase the office.
 
-21/10/2025, 09:12 - Sean Fennell: Ok starting the re-route today. Need the VO confirmed though Gary.
+05/11/2025, 11:20 - Gary Pearce (Bradstone PM): Sean — rock on plots 7-12. Structural engineer wants a survey before we go further.
 
-21/10/2025, 09:30 - Gary Pearce (Bradstone PM): Yeah noted. Will chase Clarke & Webb.
+07/11/2025, 08:15 - Sean Fennell: Survey done. 480 cubic metres of rock. That's £45,600 at our contract rate of £95/m3. Not in the geotech Gary.
 
----
+07/11/2025, 09:00 - Gary Pearce (Bradstone PM): I know. Keep records, we'll deal with it.
 
-05/11/2025, 11:20 - Gary Pearce (Bradstone PM): Sean heads up — we've hit rock on plots 7-12. Structural engineer wants a full rock survey before we go further. Might be a few days.
+18/11/2025, 16:45 - Gary Pearce (Bradstone PM): Architect has changed the Block B foundation spec. Strip footings out, pad and beam in. New drawings Rev E attached.
 
-05/11/2025, 11:35 - Sean Fennell: We're hitting it hard. It's not on the geotech. This is going to add serious cost Gary.
+19/11/2025, 07:55 - Sean Fennell: That's a complete redesign. Extra concrete, different reinforcement, extra excavation. We're looking at £58,000 on top.
 
-05/11/2025, 11:47 - Gary Pearce (Bradstone PM): I know. Keep records. We'll deal with it.
+19/11/2025, 09:10 - Gary Pearce (Bradstone PM): Get the costs together and send them over.
 
-07/11/2025, 08:15 - Sean Fennell: Rock survey done. It's across about 480m³. That's way over what we priced.
+06/02/2026, 10:15 - Gary Pearce (Bradstone PM): Sean, architect wants a retaining wall along the south boundary. About 45m. Not in scope.
 
-07/11/2025, 09:00 - Gary Pearce (Bradstone PM): Yeah the geotech didn't pick it up. Get the costs together and we'll look at it.
-
----
-
-18/11/2025, 16:45 - Gary Pearce (Bradstone PM): Sean — architect has changed the foundation spec on Block B. Going from strip footings to pad and beam. New drawings Rev E attached. Can you price the change?
-
-19/11/2025, 07:55 - Sean Fennell: That's a complete redesign for Block B. We'll need extra concrete, different reinforcement, extra dig. Could be £60k on top.
-
-19/11/2025, 09:10 - Gary Pearce (Bradstone PM): Price it up and send it over.
+06/02/2026, 10:40 - Sean Fennell: That's extra works. 45m retaining wall, rough estimate £22,500. Need a proper VO before we start Gary. Still waiting on the other three.
 
 ---
 
@@ -120,70 +112,41 @@ Exported 28 March 2026
 
 From: Sean Fennell <sfennell@fennellcivil.co.uk>
 To: Gary Pearce <g.pearce@bradstone.co.uk>
-Date: 3 December 2025
-Subject: Drainage re-route — VO outstanding
+Date: 10 January 2026
+Subject: Outstanding Variation Orders — Notice under Clause 5.3
 
 Gary,
 
-Following our WhatsApp conversation on 20 October, we re-routed the northern boundary drainage as instructed. 180m of 150mm pipe, completed 25 October.
+We now have four outstanding items with no formal Variation Order:
 
-We still have not received a Variation Order for this work. Value of the variation is £12,240 (180m x £68/m) plus additional manholes.
+1. Northern boundary drainage re-route (instructed verbally 20 Oct 2025)
+   180m x 150mm pipe at £68/m = £12,240 plus 2 additional manholes at £850 each = £1,700
+   Subtotal: £13,940
 
-Please confirm the VO is being processed.
+2. Rock excavation — Plots 7-12 (unforeseen physical conditions under Clause 8)
+   480m3 at £95/m3 = £45,600
+   Standing time during rock survey: 3 days x £1,800/day = £5,400
+   Subtotal: £51,000
+
+3. Block B foundation redesign (architect instruction 18 Nov 2025)
+   Additional excavation, formwork, pad and beam concrete: £58,000
+
+4. South boundary retaining wall (verbal instruction 6 Feb 2026)
+   45m retaining wall: £22,500
+
+Total outstanding: £145,440
+
+All items are outside our original subcontract scope. Notice under Clause 5.3 is hereby formally given. We require Variation Orders within 7 days or this matter will be escalated.
 
 Sean Fennell
-Fennell Civil Engineering
-
----
-
-From: Gary Pearce <g.pearce@bradstone.co.uk>
-To: Sean Fennell <sfennell@fennellcivil.co.uk>
-Date: 5 December 2025
-Subject: RE: Drainage re-route — VO outstanding
-
-Sean,
-
-Thanks — we are reviewing this with the QS. Will revert shortly.
-
-Gary
-
----
-
-From: Sean Fennell <sfennell@fennellcivil.co.uk>
-To: Gary Pearce <g.pearce@bradstone.co.uk>
-Date: 10 January 2026
-Subject: Outstanding VOs — Urgent
-
-Gary,
-
-We now have three outstanding items with no formal VO:
-1. Northern boundary drainage re-route (instructed 20 Oct) — £12,240
-2. Rock excavation plots 7-12 (480m³ at £95/m³) — £45,600
-3. Block B foundation redesign (instructed 18 Nov) — estimated £58,000
-
-Total outstanding: approx £115,840. These are all outside our original scope and our 14-day notice obligations under Clause 5.3 are being met by this email.
-
-We need formal VOs issued or a response within 7 days.
-
-Sean
+Director, Fennell Civil Engineering
 
 ---
 
 From: Gary Pearce <g.pearce@bradstone.co.uk>
 To: Sean Fennell <sfennell@fennellcivil.co.uk>
 Date: 14 January 2026
-Subject: RE: Outstanding VOs — Urgent
 
-Sean,
+Sean, our QS is reviewing all items. We will revert by end of month.
 
-Noted. Our QS is reviewing all three items. We expect to revert by end of month.
-
-Gary
-
----
-
-06/02/2026, 10:15 - Gary Pearce (Bradstone PM): Sean — the architect wants to add a retaining wall along the south boundary. About 45m. Not in the original scope. Can you take a look?
-
-06/02/2026, 10:40 - Sean Fennell: That's an extra. Need a proper VO before we start Gary. We're still waiting on the three from before.
-
-06/02/2026, 10:55 - Gary Pearce (Bradstone PM): Yeah fair. Will get one raised today.`
+Gary`
