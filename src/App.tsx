@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { getApprovalStatus } from './lib/db'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import ProjectView from './pages/ProjectView'
@@ -39,6 +40,7 @@ function parseRoute() {
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
+  const [approved, setApproved] = useState<'approved' | 'pending' | 'unknown' | 'checking'>('checking')
   const [route, setRoute] = useState(parseRoute)
 
   // Demo sub-state
@@ -54,29 +56,38 @@ export default function App() {
 
   // Auth
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setSessionLoading(false)
       if (session) {
-        // Logged in on root or login page → go to dashboard
-        const path = getPath()
-        if (path === '/' || path === '/login' || path === '/auth') {
-          navigate('/dashboard')
+        // Check approval status
+        const status = await getApprovalStatus(session.user.id)
+        setApproved(status)
+        // Logged in and approved → navigate to app
+        if (status === 'approved') {
+          const path = getPath()
+          if (path === '/' || path === '/login' || path === '/auth') {
+            navigate('/dashboard')
+          }
         }
-        // /project/:id, /dashboard — stay exactly where we are
+      } else {
+        setApproved('unknown')
       }
-      // Not logged in — stay on current page (home, login, analyse, demo all fine without auth)
+      // Not logged in — stay on current page
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       if (event === 'SIGNED_IN' && session) {
-        // Only navigate on actual sign-in — NOT on token refresh / tab focus
-        // Check if we're on an auth page before redirecting
-        const currentPath = getPath()
-        const isAuthPage = currentPath === '/login' || currentPath === '/' || currentPath === '/auth'
-        if (isAuthPage) navigate('/dashboard')
-        // If already on /project/... or /dashboard — stay put
+        // Check approval on sign-in
+        const status = await getApprovalStatus(session.user.id)
+        setApproved(status)
+        if (status === 'approved') {
+          const currentPath = getPath()
+          const isAuthPage = currentPath === '/login' || currentPath === '/' || currentPath === '/auth'
+          if (isAuthPage) navigate('/dashboard')
+        }
+        // Pending — stay on login page, approval screen will show
       }
       if (event === 'SIGNED_OUT') {
         navigate('/login')
@@ -130,6 +141,37 @@ export default function App() {
             onReset={() => { setDemoResults(null); setDemoPage('upload') }}
           />
         )}
+      </div>
+    )
+  }
+
+  // ── Pending approval ──
+  if (session && (approved === 'pending' || approved === 'checking')) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+        <div className="text-2xl font-black text-amber-500 tracking-tight mb-8">
+          Site<span className="text-gray-900">Clause</span>
+        </div>
+        <div className="max-w-md text-center">
+          <div className="text-5xl mb-6">{approved === 'checking' ? '⏳' : '🔐'}</div>
+          <h1 className="text-2xl font-black text-gray-900 mb-3">
+            {approved === 'checking' ? 'Checking access...' : 'Access Pending Approval'}
+          </h1>
+          {approved === 'pending' && (
+            <>
+              <p className="text-gray-500 mb-6 leading-relaxed">
+                Your account is registered. Access will be granted shortly.
+                If you need immediate access, email <a href="mailto:hello@siteclause.io" className="text-amber-500 font-semibold">hello@siteclause.io</a>.
+              </p>
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Sign out
+              </button>
+            </>
+          )}
+        </div>
       </div>
     )
   }

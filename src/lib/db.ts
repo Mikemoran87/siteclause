@@ -1,5 +1,17 @@
 import { supabase } from './supabase'
 
+// ── Profile / approval ────────────────────────────────────────────────────────
+
+export async function getApprovalStatus(userId: string): Promise<'approved' | 'pending' | 'unknown'> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('approved')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error || !data) return 'unknown'
+  return data.approved ? 'approved' : 'pending'
+}
+
 // ── Project types ──────────────────────────────────────────────────────────────
 
 export interface Project {
