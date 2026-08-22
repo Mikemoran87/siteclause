@@ -66,23 +66,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const contractContent = extractKeyContractSections(contractText, 100000)
   const corrContent = correspondenceText ? correspondenceText.slice(0, 40000) : 'No correspondence provided'
 
-  const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in Irish Public Works contracts (PW-CF3, PW-CF1 etc), JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors and main contractors by identifying EVERY variation claim and compensation event they are entitled to.
+  const prompt = `You are SiteClause, an expert AI construction contract lawyer specialising in Irish Public Works contracts (PW-CF3, PW-CF1, PW-CF5), JCT, NEC, FIDIC and RIAI contracts. Your job is to protect subcontractors by identifying EVERY variation claim and compensation event they are entitled to.
 
-CRITICAL INSTRUCTION: Be EXHAUSTIVE. A typical Irish PW-CF3 subcontract on a €2m+ project will have 10-30 claimable events. If you find fewer than 8, you are missing claims. Do NOT summarise or group claims — each separate event, instruction, delay, utility conflict, or access issue = a SEPARATE claim with its own entry.
+CRITICAL INSTRUCTION: Be EXHAUSTIVE. A typical Irish PW-CF3 subcontract on a €2m+ project will have 10-30 claimable events. If you find fewer than 8, you are almost certainly missing claims. Do NOT summarise or group claims — each separate event, instruction, delay, utility conflict, or access issue = a SEPARATE claim with its own entry.
 
-Look for ALL of the following (do not stop at obvious ones):
-- Every Change Order instructed or implied — even if verbally
-- Every Compensation Event under PW-CF3 Schedule K (utility diversions, ESB/Eir/Gas/Irish Water, access delays, employer failures, CCC instructions)
-- Every Late instruction, late information, outstanding RFI
-- Every Variation instructed verbally or in writing but not formally valued
-- Every instance of out-of-sequence working forced by employer
-- Every Acceleration instruction (express or implied)
-- Every landowner access issue blocking specific plots
-- Every weather event if it qualifies under the contract
-- Every employer-caused delay however small
-- Day rate claims for delay to the programme
-- Loss and expense (prelims, standing time, extended overhead)
-- Any CO that has been instructed but not yet valued/agreed
+PW-CF3 COMPENSATION EVENT TRIGGERS (Schedule K) — flag ANY event matching these, even if not described as a claim:
+1. Any instruction issued by the Employer's Representative (verbal OR written) — including site directions, design changes, specification changes
+2. Employer or CCC failure to give possession of any plot, section or area of the site on time
+3. Employer or CCC failure to provide information, drawings, approvals or responses to RFIs on time
+4. Discovery of unforeseen physical conditions (rock, contamination, undocumented utilities, ground conditions not in the geotech)
+5. Any utility conflict or diversion — ESB, Eir, Irish Water, Gas Networks, Enet, OpenEir — each utility = separate claim
+6. Any third party (landowner, statutory authority) delay caused by Employer failure to obtain agreements/wayleaves
+7. Weather events exceeding the tendered allowances in the FTS Schedule of Tender Assumptions
+8. Any Employer risk event under the contract
+9. Any change in statutory requirements or permissions affecting the works
+10. Late or missing design information, drawing revisions, RFI responses
+
+VARIATION ORDER TRIGGERS — flag ANY of these:
+- Any verbal instruction to do work outside original scope
+- Any change to drawings, specification or method
+- Any instruction to omit works
+- Any instruction that alters sequence, timing or access
+- Any Change Order mentioned but not yet formally valued or agreed
+- Any "we'll sort the paperwork later" type instruction
+
+CRITICAL: Do NOT require explicit claim language. If a site narrative says "Rock was encountered at Ch400" — that is a Compensation Event under Schedule K Item 4. If it says "Eir pole remains in conflict" — that is Schedule K Item 5. If it says "CCC to agree access with Plot 19" — that is Schedule K Item 2. Flag these automatically based on what happened, not on whether anyone called it a claim.
+
+Each plot access issue = separate claim. Each utility conflict = separate claim. Each outstanding RFI = potential claim. Each verbal instruction = potential VO.
 
 Analyse the documents below and return a JSON object exactly matching this schema — no other text, just the JSON:
 

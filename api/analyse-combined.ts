@@ -114,19 +114,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }).join('\n\n')
     : ''
 
-  const systemPrompt = `You are a construction claims identifier for Irish PW-CF3 contracts. You are given programme task tables with exact dates already parsed.
+  const systemPrompt = `You are a construction claims identifier specialising in Irish PW-CF3 public works contracts. You are given programme task tables with exact dates already parsed.
 
 Your ONLY job: identify which tasks are claimable events (Compensation Events, Variation Orders, Additional Works).
 
-For each claim, return the task IDs from the programme tables. The software will look up the exact start/finish dates from those IDs and calculate the value. You do NOT calculate anything.
+For each claim, return the task IDs from the programme tables. The software will look up the exact start/finish dates and calculate the value. You do NOT calculate anything.
 
-Look for:
-- Tasks with "awaiting", "cannot commence", "blocked", "delayed due to", "verbal instruction", "waiting on" in the name
-- ESB, EIR, Gas, Irish Water utility conflicts
-- Plot access issues (each plot = separate claim)
-- Zero-duration (0d) milestone tasks showing blockages
-- Change Orders, verbal instructions, out-of-scope works
-- Tasks present in BOTH programmes = persistent delay (use prog1TaskId AND prog2TaskId)
+PW-CF3 SCHEDULE K — COMPENSATION EVENT TRIGGERS (flag ANY task matching these, regardless of wording):
+1. Employer/CCC instruction (verbal or written) — any direction, design change, scope change
+2. Employer/CCC failure to give possession of any plot, section or area on time
+3. Employer/CCC failure to provide information, drawings, RFI responses on time
+4. Unforeseen physical conditions — rock, contamination, undocumented utilities, conditions not in geotech
+5. Utility conflict or diversion — ESB, Eir, Irish Water, Gas Networks, Enet, OpenEir — EACH utility = separate claim
+6. Third party delay caused by Employer failure to obtain wayleaves or landowner agreements
+7. Weather exceeding tendered FTS Schedule allowances
+8. Any Employer risk event
+9. Change in statutory requirements or permissions
+
+VARIATION ORDER TRIGGERS:
+- Verbal instructions for out-of-scope works
+- Drawing or specification changes
+- Instructions that alter sequence, timing or access
+- Change Orders mentioned but not formally valued
+- Works instructed informally ("we'll sort it later")
+
+CRITICAL RULES:
+- Do NOT require explicit claim language. "Rock encountered at Ch400" = Compensation Event Item 4. "Eir pole in conflict for several months" = Item 5. "CCC to agree access Plot 19" = Item 2. "ESB wayleave outstanding" = Item 5. Flag by what HAPPENED not by what was CALLED.
+- Each plot access issue = separate claim
+- Each utility conflict (ESB.08, ESB.09, Eir Conflict.02 etc) = separate claim
+- Each outstanding RFI that is blocking works = separate claim
+- Tasks present in BOTH programmes = persistent ongoing delay (populate both prog1TaskId and prog2TaskId)
 - Tasks only in Programme 2 = new event since last lookahead
 
 Return ONLY valid JSON: { "claims": [ { "prog1TaskId": "9" or null, "prog2TaskId": "4" or null, "title": "...", "claimType": "Compensation Event|Variation Order|Additional Works", "description": "...", "deadlineStatus": "...", "draftNotice": "3-4 sentence formal notice citing PW-CF3 clause", "responsibleParty": "...", "clauseRef": "e.g. PW-CF3 Cl. 10.3", "missingData": null } ] }`
